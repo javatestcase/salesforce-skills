@@ -1,0 +1,38 @@
+# Eval spec for the deal-review skill. Schema: evals/README.md.
+
+skill: deal-review
+posture: read-only
+
+should_trigger:
+  - "how healthy is the Cobalt deal"
+  - "will the Acme renewal actually close this quarter"
+  - "score the Meridian deal and flag the risks"
+should_not_trigger:
+  - "what has to happen to advance the Cobalt deal"   # -> deal-advance-gap
+  - "what if the top 3 deals slip this quarter"        # -> deal-slip-scenario
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"          # step 1 grounding
+  - "OpportunityContactRoles"                            # step 2 stakeholders
+  - "OpportunityHistories"                               # step 2 slip detection
+  - "Tasks(first: 15"                                    # step 2 activity children
+batched_in_one_turn: true      # step 2 read + step 2b evidence searches
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Deal Review"
+  - "Qualification"
+  - "Activity Timeline"
+  - "Risks"
+output_must_link_records: true
+
+rubric:
+  - "Health score is signal-adjusted from SFDC Probability, and the +/- math is shown with cited triggers."
+  - "Activity is split into completed / open / scheduled states; a future or open item never counts as a completed touch."
+  - "A current-cycle CloseDate slip is penalized only when OpportunityHistories shows the current CloseDate moved this cycle."
+  - "Strengths are populated when present, not dropped while keeping risks."
+  - "Every qualification row and risk cites a dated source; blanks are shown as blank, not invented."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

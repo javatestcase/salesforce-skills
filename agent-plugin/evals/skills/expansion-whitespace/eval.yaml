@@ -1,0 +1,38 @@
+# Eval spec for the expansion-whitespace skill. Schema: evals/README.md.
+
+skill: expansion-whitespace
+posture: read-only
+
+should_trigger:
+  - "where's the whitespace at Meridian Health"
+  - "find expansion plays for the Cobalt Robotics account"
+  - "what can we upsell into Acme"
+should_not_trigger:
+  - "when does the Acme contract renew"      # -> renewal-radar
+  - "map the stakeholders on this deal"      # -> stakeholder-map
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Account\"])"
+  - "Account(where:"
+  - "OpportunityLineItems"
+  - "ChildAccounts"
+batched_in_one_turn: true
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Owned vs possible"
+  - "Top plays"
+  - "Not yet credible"
+  - "Suggested opportunities"
+output_must_link_records: true
+
+rubric:
+  - "Resolves to one account before reading; disambiguates by amount/product or asks when the name collides."
+  - "Derives 'owned today' from won-opportunity line items (Product2), not from guesses."
+  - "Flags a play only when at least one piece of evidence supports it; speculative items go to the parking lot."
+  - "Ranks plays by sales-motion friction (renewal add-on / warm intro / cold), not just $ size."
+  - "Suggested opportunities are presented as suggestions only; the skill never modifies Salesforce."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 5

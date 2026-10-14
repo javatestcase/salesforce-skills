@@ -1,0 +1,38 @@
+# Eval spec for the account-context skill. Schema: evals/README.md.
+
+skill: account-context
+posture: read-only
+
+should_trigger:
+  - "tell me about the Acme account"
+  - "catch me up on City of Hope"
+  - "give me the full picture on Meridian Health"
+should_not_trigger:
+  - "research this prospect that isn't in our CRM yet"  # -> research-prospect
+  - "rank my book into tiers"                            # -> account-tiering
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Account\"])"   # step 2 grounding
+  - "Account(where: { Name: { like:"        # step 1 resolve
+  - "Account(where: { Id: { eq:"             # step 3 read by Id
+  - "Opportunities(first: 10, where: { IsClosed: { eq: false } }"
+batched_in_one_turn: true      # step 3 account read + aggregate + enrich together
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Account Context"
+  - "Current State"
+  - "Salesforce"
+  - "Key Contacts"
+output_must_link_records: true
+
+rubric:
+  - "Resolves to a single account before the deep read; on ambiguity it lists candidates and asks rather than probing or guessing."
+  - "Open pipeline totals come from the authoritative aggregate, not the bounded supporting-detail records."
+  - "Gaps and flags (stale activity, blank NextStep, single-threading) are surfaced from the data."
+  - "Absent email/docs/Slack connectors are noted once rather than implied as account silence."
+  - "Every record referenced is linked inline with a Lightning URL."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 7

@@ -1,0 +1,38 @@
+# Eval spec for the weekly-wrap skill. Schema: evals/README.md.
+
+skill: weekly-wrap
+posture: read-only
+
+should_trigger:
+  - "give me my weekly wrap"
+  - "recap my week — wins, losses, and what's on for Monday"
+  - "build an internal update on the team's week"
+should_not_trigger:
+  - "give me my morning briefing"          # -> daily-briefing
+  - "full pipeline review for the quarter"  # -> pipeline-review
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"
+  - "closedThisWeek: Opportunity(scope: MINE"
+  - "touchedThisWeek: Opportunity(scope: MINE"
+  - "meetingsThisWeek: Event(scope: MINE"
+batched_in_one_turn: true
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Week of"
+  - "Closed"
+  - "Moved"
+  - "Monday"
+output_must_link_records: true
+
+rubric:
+  - "Recaps closed, moved, and new deals plus activity and next week's priorities from query results, nothing invented."
+  - "Reports moved opps as 'active this week, now at [Stage]' — no fabricated from→to arrows without OpportunityHistory."
+  - "Blank fields shown as blank; field labels human-readable, never raw __c or Ids."
+  - "Any Slack post is formatted and left as a draft the user posts — never auto-posted."
+  - "Read-only: never writes to Salesforce and never sends anything."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 3

@@ -1,0 +1,29 @@
+# Eval spec for the voice-profile skill. Schema: evals/README.md.
+# Email-only workflow: no Salesforce reads, so expected_reads is omitted.
+
+skill: voice-profile
+posture: read-only
+
+should_trigger:
+  - "build my voice profile from my sent emails"
+  - "capture my writing style so drafts sound like me"
+should_not_trigger:
+  - "draft an email to this prospect"       # -> draft-outreach
+  - "sweep my inbox and reply"              # -> inbox-sweep
+
+# No Salesforce reads — this skill only reads sent mail via the email connector.
+# expected_reads intentionally omitted.
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Voice Profile"
+  - "Voice & Messaging"
+  - "Greeting"
+  - "Anchor examples"
+
+rubric:
+  - "Every pattern (greeting, sign-off, length, tone, phrases) traces to real sent emails; nothing invented."
+  - "If the email connector is unavailable or the sent folder is empty, it stops and asks rather than inventing a profile."
+  - "Requires an email connector for its input (reading sent mail) but neither sends nor writes anything."
+  - "Anchor examples are real excerpts from sent mail, not fabricated samples."
+  - "Read-only: no Salesforce access, no email sent, no records changed."

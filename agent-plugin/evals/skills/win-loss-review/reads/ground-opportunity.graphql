@@ -1,0 +1,1 @@
+query { uiapi { objectInfos(apiNames: ["Opportunity"]) { fields { ApiName label } childRelationships { childObjectApiName relationshipName } } } }

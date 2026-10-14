@@ -1,0 +1,1 @@
+query { uiapi { query { recentTasks: Task(first: 10, orderBy: { ActivityDate: { order: DESC } }) { edges { node { Id Subject { value } ActivityDate { value } Status { value } } } } } } }

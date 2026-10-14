@@ -1,0 +1,37 @@
+# Eval spec for the rep-context skill. Schema: evals/README.md.
+
+skill: rep-context
+posture: read-only
+
+should_trigger:
+  - "prep me for my 1:1 with Priya"
+  - "catch me up on how Marcus is doing before our sync"
+  - "what does my rep Dana need help with"
+should_not_trigger:
+  - "prep me for the Acme customer call"        # -> call-prep
+  - "review my whole team's pipeline"           # -> team-pipeline
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"   # step 1 grounding
+  - "Owner: { Name: { like:"                      # step 2 rep book
+  - "FROM Task WHERE Owner.Name LIKE"             # step 2 activity (SOQL)
+  - "IsWon = true AND CloseDate = THIS_QUARTER"   # step 2 closed-won (SOQL)
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Rep Context"
+  - "Pipeline"
+  - "Likely Needs Help On"
+  - "1:1 Questions"
+output_must_link_records: true
+
+rubric:
+  - "Treats the named person as an internal rep (their owned book), not a customer contact."
+  - "Reads pipeline, Task/Event activity, and closed-won in one batched turn — no per-opp follow-ups."
+  - "Flags where the rep needs help with a specific opp and cited evidence, not a generic remark."
+  - "1:1 questions are deal-specific and grounded in the data, not boilerplate."
+  - "Every pipeline/activity claim cites a record or thread; blanks quoted, not invented."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 5

@@ -1,0 +1,38 @@
+# Eval spec for the forecast-narrative skill. Schema: evals/README.md.
+
+skill: forecast-narrative
+posture: read-only
+
+should_trigger:
+  - "walk me through my forecast for this quarter"
+  - "build a forecast call brief for Dana's number"
+  - "what's my commit and what's at risk this quarter"
+should_not_trigger:
+  - "review my whole team's pipeline and coaching gaps"  # -> team-pipeline
+  - "what if the Meridian deal slips to next quarter"     # -> deal-slip-scenario
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"
+  - "aggregate"
+  - "groupBy: { ForecastCategory:"
+  - "Opportunity(scope: MINE"
+batched_in_one_turn: true
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "The Number"
+  - "Commit Deals"
+  - "Best Case Deals"
+  - "Risk to Commit"
+output_must_link_records: true
+
+rubric:
+  - "Takes the whole-book number from the server-side aggregate, never from summing a first-N page."
+  - "Bounds both ends of CloseDate to the named quarter; never uses a bare quarter-relative literal."
+  - "Per-deal commentary is clearly labeled as the top deals sampled, while bucket totals are whole-book."
+  - "Calls out single-deal concentration (~40%+ of Commit) explicitly as a risk headline."
+  - "Every deal line cites a queried value; forecast submission stays manual with the rep."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 5

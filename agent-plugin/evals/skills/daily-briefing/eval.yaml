@@ -1,0 +1,46 @@
+# Eval spec for the daily-briefing skill.
+# Layer A (static validator) reads `posture`. The rest is the Layer B runtime contract
+# (executed when a Quick org + agent are connected). Schema: evals/README.md.
+
+skill: daily-briefing
+posture: read-only        # read-only | draft-only | write
+
+# --- Discovery / trigger: prompts that SHOULD activate this skill ---
+should_trigger:
+  - "give me my morning sales briefing"
+  - "what's on my plate today"
+  - "daily rundown of meetings, pipeline, and inbox"
+# Prompts that should NOT route here (belong to a neighbor skill)
+should_not_trigger:
+  - "just show my calendar for today"        # -> calendar-events
+  - "full pipeline review for the quarter"    # -> pipeline-review
+
+# --- Process / trajectory expectations ---
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"   # step 1 grounding
+  - "Event(scope: MINE"                            # 2a calendar
+  - "Opportunity(scope: MINE"                      # 2b/2c closing-soon + past-due
+  - "currentUser"                                  # 2e running user
+batched_in_one_turn: true      # steps 1 + 2a-2e should be issued together
+forbidden_endpoints: ["discover", "describe"]
+
+# --- Outcome: deterministic checks on the final Markdown ---
+output_must_contain:
+  - "Daily Briefing"
+  - "Today's Meetings"
+  - "Closing in 14 Days"
+  - "Past Due"
+output_must_link_records: true   # SF records linked as /lightning/r/<Type>/<Id>/view
+
+# --- Outcome: LLM-judge rubric (natural-language criteria) ---
+rubric:
+  - "Every value shown is traceable to a query result; nothing is fabricated."
+  - "Blank fields are shown as blank, not invented."
+  - "Field labels are human-readable, never raw __c API names or Ids."
+  - "Leads with a single highest-priority move for the day."
+  - "If scope: MINE returned empty, it stops and asks which scope rather than widening."
+
+# --- Efficiency ---
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 8

@@ -1,0 +1,36 @@
+# Eval spec for the customer-voice skill. Schema: evals/README.md.
+
+skill: customer-voice
+posture: read-only
+
+should_trigger:
+  - "what are customers saying about our pricing"
+  - "pull customer quotes about the new dashboard feature"
+  - "surface recurring themes from my accounts this quarter"
+should_not_trigger:
+  - "how healthy is the Cobalt deal"          # -> deal-review
+  - "what has to happen to advance the Acme deal" # -> deal-advance-gap
+
+expected_reads:
+  - "Account(scope: MINE"                       # step 1 account scoping
+  - "currentUser { Email"                       # step 1 internal-domain resolution
+  - "Organization"                              # step 1 org name
+batched_in_one_turn: true      # 3 SF reads + doc/email searches fire together
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Customer Voice"
+  - "Accounts represented"
+  - "Gaps"
+output_must_link_records: true
+
+rubric:
+  - "Only customer speakers (not the internal domain/org) are quoted; internal voices are excluded."
+  - "Every quote is verbatim (1–3 sentences), not a paraphrase or summary."
+  - "Each quote cites speaker name + title + account and a dated source link."
+  - "Open-ended topics are clustered into themes; top 3–5 by frequency are returned."
+  - "Accounts in scope with no transcript/thread are reported as gaps, not silently dropped."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 3

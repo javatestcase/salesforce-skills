@@ -1,0 +1,1 @@
+query { uiapi { query { Opportunity(orderBy: { LastModifiedDate: { order: DESC } }, first: 10) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } LastModifiedDate { value } Owner { Name { value } } Account { Name { value } } } } } } } }

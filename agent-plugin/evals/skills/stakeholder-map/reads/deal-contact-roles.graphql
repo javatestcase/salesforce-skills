@@ -1,0 +1,1 @@
+query { uiapi { query { Opportunity(first: 1, orderBy: { LastModifiedDate: { order: DESC } }) { edges { node { Id Name { value } OpportunityContactRoles { edges { node { Role { value } IsPrimary { value } Contact { Id Name { value } Title { value } Email { value } Phone { value } ReportsTo { Name { value } Title { value } } } } } } } } } } } }

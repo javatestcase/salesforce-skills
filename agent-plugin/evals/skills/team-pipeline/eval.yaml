@@ -1,0 +1,37 @@
+# Eval spec for the team-pipeline skill. Schema: evals/README.md.
+
+skill: team-pipeline
+posture: read-only
+
+should_trigger:
+  - "review my team's pipeline before the forecast call"
+  - "where do my reps need help this quarter"
+  - "build a team pipeline brief for the Monday meeting"
+should_not_trigger:
+  - "review just Priya's pipeline"          # -> pipeline-review
+  - "catch me up on Marcus before our 1:1"  # -> rep-context
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"    # step 1 grounding
+  - "ManagerId: { eq:"                             # step 2 my-team resolution
+  - "aggregate { Opportunity"                      # step 3 rollup
+  - "groupBy: { OwnerId: { group: true }"          # step 3 per-rep grouping
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Team Pipeline"
+  - "Scoreboard"
+  - "Deals That Decide the Quarter"
+  - "Monday Questions"
+output_must_link_records: true
+
+rubric:
+  - "Resolves the team (my team / named list / territory) and disambiguates name collisions instead of probing."
+  - "Uses server-side aggregates for the scoreboard math and only a bounded raw sample for specifics."
+  - "Falls back to the SOQL GROUP BY equivalent when the GraphQL aggregate errors, without re-firing the same shape."
+  - "Swing-deal writeups tie each deal to the rep's gap math with a specific leader action."
+  - "Monday questions are conversational and grounded in a specific deal per Behind/At-risk rep."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 9

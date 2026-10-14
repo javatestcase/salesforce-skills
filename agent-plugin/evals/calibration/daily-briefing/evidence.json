@@ -1,0 +1,335 @@
+{
+ "skill": "daily-briefing",
+ "org": "calibration-fixture",
+ "instanceUrl": "https://example-dev-ed.develop.my.salesforce.com",
+ "today": "2026-09-24",
+ "connectors": {
+  "salesforce": "available (reads pre-executed by the host, results below)",
+  "email": "unavailable",
+  "docs": "unavailable",
+  "slack": "unavailable",
+  "web": "unavailable",
+  "calendar": "unavailable except Salesforce Event records"
+ },
+ "truncation": [],
+ "reads": {
+  "current-user": {
+   "uiapi": {
+    "currentUser": {
+     "Id": "005bm000001AbCdAAK",
+     "Name": {
+      "value": "Dana Ruiz"
+     },
+     "Email": {
+      "value": "dana.ruiz@genwatt.example"
+     },
+     "TimeZoneSidKey": {
+      "value": "America/Los_Angeles"
+     }
+    }
+   }
+  },
+  "ground-opportunity": {
+   "uiapi": {
+    "objectInfos": [
+     {
+      "fields": [
+       {
+        "ApiName": "Amount",
+        "label": "Amount"
+       },
+       {
+        "ApiName": "StageName",
+        "label": "Stage"
+       },
+       {
+        "ApiName": "CloseDate",
+        "label": "Close Date"
+       },
+       {
+        "ApiName": "NextStep",
+        "label": "Next Step"
+       },
+       {
+        "ApiName": "LastActivityDate",
+        "label": "Last Activity"
+       },
+       {
+        "ApiName": "Renewal_Risk__c",
+        "label": "Renewal Risk"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "calendar": {
+   "uiapi": {
+    "query": {
+     "Event": {
+      "edges": [
+       {
+        "node": {
+         "Id": "00Ubm00000A1bCdEAF",
+         "Subject": {
+          "value": "GenWatt x Harbrant — renewal review"
+         },
+         "StartDateTime": {
+          "value": "2026-09-24T17:00:00.000Z"
+         },
+         "EndDateTime": {
+          "value": "2026-09-24T17:45:00.000Z"
+         },
+         "Location": {
+          "value": "https://meet.example/harbrant"
+         },
+         "WhatId": {
+          "value": "006bm00000Wn1UBAAZ"
+         },
+         "WhoId": {
+          "value": null
+         },
+         "Description": {
+          "value": "Renewal review with Harbrant ops. Attendee: m.okafor@harbrant-shipping.example"
+         }
+        }
+       },
+       {
+        "node": {
+         "Id": "00Ubm00000A1bCeEAF",
+         "Subject": {
+          "value": "Internal pipeline sync"
+         },
+         "StartDateTime": {
+          "value": "2026-09-24T21:00:00.000Z"
+         },
+         "EndDateTime": {
+          "value": "2026-09-24T21:30:00.000Z"
+         },
+         "Location": {
+          "value": null
+         },
+         "WhatId": {
+          "value": null
+         },
+         "WhoId": {
+          "value": null
+         },
+         "Description": {
+          "value": null
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  "meeting-context": {
+   "uiapi": {
+    "query": {
+     "Account": {
+      "edges": [
+       {
+        "node": {
+         "Id": "001bm00000Qa1HbAAJ",
+         "Name": {
+          "value": "Harbrant Shipping"
+         },
+         "Website": {
+          "value": "harbrant-shipping.example"
+         },
+         "LastActivityDate": {
+          "value": "2026-09-22"
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  "closing-soon": {
+   "uiapi": {
+    "query": {
+     "Opportunity": {
+      "edges": [
+       {
+        "node": {
+         "Id": "006bm00000Wn1UBAAZ",
+         "Name": {
+          "value": "Harbrant Shipping — Renewal SLA Uplift"
+         },
+         "StageName": {
+          "value": "Negotiation",
+          "displayValue": "Negotiation"
+         },
+         "Amount": {
+          "value": 329000,
+          "displayValue": "$329,000.00"
+         },
+         "CloseDate": {
+          "value": "2026-09-30"
+         },
+         "NextStep": {
+          "value": "Send redlined MSA"
+         },
+         "LastActivityDate": {
+          "value": "2026-09-22"
+         },
+         "Renewal_Risk__c": {
+          "value": "Medium"
+         },
+         "AccountId": {
+          "value": "001bm00000Qa1HbAAJ"
+         },
+         "Account": {
+          "Name": {
+           "value": "Harbrant Shipping"
+          }
+         }
+        }
+       },
+       {
+        "node": {
+         "Id": "006bm00000Wn1TdAAJ",
+         "Name": {
+          "value": "Vessring Bau GmbH — Expansion Site Expansion"
+         },
+         "StageName": {
+          "value": "Proposal",
+          "displayValue": "Proposal"
+         },
+         "Amount": {
+          "value": 806000,
+          "displayValue": "$806,000.00"
+         },
+         "CloseDate": {
+          "value": "2026-10-05"
+         },
+         "NextStep": {
+          "value": null
+         },
+         "LastActivityDate": {
+          "value": "2026-09-10"
+         },
+         "Renewal_Risk__c": {
+          "value": null
+         },
+         "AccountId": {
+          "value": "001bm00000Qa1HcAAJ"
+         },
+         "Account": {
+          "Name": {
+           "value": "Vessring Bau GmbH"
+          }
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  "past-due": {
+   "uiapi": {
+    "query": {
+     "Opportunity": {
+      "edges": [
+       {
+        "node": {
+         "Id": "006bm00000Wn1TrAAJ",
+         "Name": {
+          "value": "Bracken & Pyle Contractors — Expansion Generator Fleet"
+         },
+         "StageName": {
+          "value": "Qualification",
+          "displayValue": "Qualification"
+         },
+         "Amount": {
+          "value": 110000,
+          "displayValue": "$110,000.00"
+         },
+         "CloseDate": {
+          "value": "2026-09-15"
+         },
+         "NextStep": {
+          "value": null
+         },
+         "LastActivityDate": {
+          "value": "2026-08-29"
+         },
+         "Renewal_Risk__c": {
+          "value": null
+         },
+         "AccountId": {
+          "value": "001bm00000Qa1HdAAJ"
+         },
+         "Account": {
+          "Name": {
+           "value": "Bracken & Pyle Contractors"
+          }
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  "closing-soon-total": {
+   "uiapi": {
+    "aggregate": {
+     "Opportunity": {
+      "edges": [
+       {
+        "node": {
+         "aggregate": {
+          "Amount": {
+           "sum": {
+            "value": 1135000,
+            "displayValue": "$1,135,000.00"
+           }
+          },
+          "Id": {
+           "count": {
+            "value": 2
+           }
+          }
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  },
+  "past-due-total": {
+   "uiapi": {
+    "aggregate": {
+     "Opportunity": {
+      "edges": [
+       {
+        "node": {
+         "aggregate": {
+          "Amount": {
+           "sum": {
+            "value": 110000,
+            "displayValue": "$110,000.00"
+           }
+          },
+          "Id": {
+           "count": {
+            "value": 1
+           }
+          }
+         }
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ }
+}

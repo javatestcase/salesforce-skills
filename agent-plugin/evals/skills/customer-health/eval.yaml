@@ -1,0 +1,38 @@
+# Eval spec for the customer-health skill. Schema: evals/README.md.
+
+skill: customer-health
+posture: read-only
+
+should_trigger:
+  - "how healthy is the Meridian account"
+  - "assess churn risk on Cobalt before renewal"
+  - "prep a QBR for Delta Systems"
+should_not_trigger:
+  - "prep me for my prospect meeting tomorrow"   # -> call-prep
+  - "build a close plan for the Cobalt deal"     # -> close-plan
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Account\"])"   # step 1 grounding
+  - "Account(where: { Name: { like:"         # step 2 account read
+  - "Cases(first: 10"                          # support signal
+  - "Tasks(first: 20"                          # engagement cadence
+batched_in_one_turn: true      # step 2 account read + evidence together
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Health:"
+  - "Watch items"
+  - "Suggested CRM edits"
+  - "not visible from CRM"
+output_must_link_records: true
+
+rubric:
+  - "Scores each health dimension (relationship, engagement trend, commercial, support, value) citing the underlying values."
+  - "Distinguishes what CRM can and cannot see (usage/NPS/tickets), marking non-visible dimensions rather than guessing."
+  - "Gives an overall verdict naming the one or two dimensions driving it."
+  - "In QBR mode it adds the meeting kit (value delivered, adoption, open items, next phase, agenda)."
+  - "CRM-edit suggestions are framed for the rep to make; the skill reads only and links the account inline."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

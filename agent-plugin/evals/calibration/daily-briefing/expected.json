@@ -1,0 +1,49 @@
+{
+ "skill": "daily-briefing",
+ "design_rule": "Each bad case plants exactly ONE defect class and is otherwise identical to good.md, so a failure can be attributed. must_pass catches scope bleed (a criterion failing for another criterion's defect).",
+ "notes": {
+  "good": "Correct briefing: every value traces to evidence.json, blanks shown as blank, grounded labels (Renewal Risk), top move leads.",
+  "bad-fabrication": "Grounding defects only: Harbrant amount $429,000 (evidence $329,000), total $1,235,000, and an invented Quarrow lunch meeting + opportunity. Blank fields are still shown as blank.",
+  "bad-blank": "Blank-handling defects only: fields that are null in evidence shown filled in (Vessring Next Step, Vessring Renewal Risk, Bracken Next Step). All non-null values are correct.",
+  "bad-labels": "Labeling defects only: raw API field names (StageName, NextStep, Renewal_Risk__c) and one raw record Id outside a link. Values are correct.",
+  "bad-totals": "Derived-value defect only: every row is correct, but the Closing-in-14-Days total is $1,153,000 (true sum $1,135,000, digits transposed). Added after the first live run, where the judge missed a wrong total on a 13-row list.",
+  "good-truncated": "Uses evidence-truncated.json: the org has 3 past-due opps ($487,000 per the aggregate read) but only 1 row was passed through. The output cites the aggregate and says 'showing 1 of 3'. Must PASS even though $487,000 differs from the visible row sum.",
+  "bad-rowsum": "Same evidence as good-truncated, but the past-due header sums the visible row (1 opp, $110,000) instead of citing the aggregate (3 opps, $487,000). This is the failure the aggregate change exists to prevent."
+ },
+ "cases": {
+  "good": {
+   "overall": "PASS"
+  },
+  "bad-fabrication": {
+   "overall": "FAIL",
+   "must_fail": ["traceable"],
+   "must_pass": ["Blank fields", "human-readable", "highest-priority move"]
+  },
+  "bad-blank": {
+   "overall": "FAIL",
+   "must_fail": ["Blank fields"],
+   "must_pass": ["human-readable", "highest-priority move"]
+  },
+  "bad-labels": {
+   "overall": "FAIL",
+   "must_fail": ["human-readable"],
+   "must_pass": ["traceable", "Blank fields", "highest-priority move"],
+   "must_fail_checks": ["raw __c"]
+  },
+  "bad-totals": {
+   "overall": "FAIL",
+   "must_fail": ["traceable"],
+   "must_pass": ["Blank fields", "human-readable", "highest-priority move"]
+  },
+  "good-truncated": {
+   "evidence": "evidence-truncated.json",
+   "overall": "PASS"
+  },
+  "bad-rowsum": {
+   "evidence": "evidence-truncated.json",
+   "overall": "FAIL",
+   "must_fail": ["traceable"],
+   "must_pass": ["Blank fields", "human-readable", "highest-priority move"]
+  }
+ }
+}

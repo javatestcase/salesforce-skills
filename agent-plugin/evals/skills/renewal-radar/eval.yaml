@@ -1,0 +1,37 @@
+# Eval spec for the renewal-radar skill. Schema: evals/README.md.
+
+skill: renewal-radar
+posture: read-only
+
+should_trigger:
+  - "scan my upcoming renewals"
+  - "which renewals are at risk this quarter"
+  - "prep the Cobalt Robotics renewal"
+should_not_trigger:
+  - "how healthy is the Meridian account overall"   # -> customer-health
+  - "build a QBR deck for Alto Financial"           # -> customer-health
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"       # step 2 grounding
+  - "currentUser"                                     # step 1 my-book scope
+  - "Type: { like: \"%renew%\" }"                     # step 3 renewal calendar
+  - "CloseDate: { gte:"                               # step 3 window filter
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Renewal Radar"
+  - "At risk"
+  - "Uplift candidates"
+  - "Suggested SFDC changes"
+output_must_link_records: true
+
+rubric:
+  - "Correctly resolves scope (my book / named rep / named account / team) from the input."
+  - "Empty owned book fails fast and asks which scope rather than silently going org-wide."
+  - "Each renewal verdict (on track / needs attention / at risk) traces to a cited signal with a date."
+  - "At-risk renewals carry concrete timeline context (days to close, months since last activity)."
+  - "Suggested SFDC changes are presented as suggestions for the rep to apply; the skill never writes."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 4

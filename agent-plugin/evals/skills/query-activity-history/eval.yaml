@@ -1,0 +1,38 @@
+# Eval spec for the query-activity-history skill. Schema: evals/README.md.
+
+skill: query-activity-history
+posture: read-only
+
+should_trigger:
+  - "show me the activity history on the Cobalt Robotics account"
+  - "what happened on this opportunity"
+  - "review the recent touches on the Meridian Health contact"
+should_not_trigger:
+  - "log a call I just had with the CFO"        # -> log-activity
+  - "build a call brief for the Acme meeting"   # -> call-prep
+
+expected_reads:
+  - "Task("
+  - "Event("
+  - "orderBy: { ActivityDate: { order: DESC } }"
+  - "Account("
+batched_in_one_turn: false
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Activity History"
+  - "activities"
+  - "Date"
+  - "Type"
+output_must_link_records: true
+
+rubric:
+  - "Validates the parent object is one of Account/Contact/Lead/Opportunity before querying."
+  - "When multiple records match the name, it lists them and asks which rather than guessing."
+  - "Renders ActivitySubtype (Call/Email/Task/Event), not the often-blank ActivityType."
+  - "An empty/absent history is reported as a valid 'no activity' result, not an error."
+  - "Every activity row traces to a queried value with a date; nothing is fabricated."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 3

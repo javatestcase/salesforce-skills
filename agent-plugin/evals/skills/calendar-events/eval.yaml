@@ -1,0 +1,37 @@
+# Eval spec for the calendar-events skill. Schema: evals/README.md.
+
+skill: calendar-events
+posture: read-only
+
+should_trigger:
+  - "show me my calendar today"
+  - "what meetings do I have next week"
+  - "pull up my schedule for tomorrow"
+should_not_trigger:
+  - "give me my full morning rundown with pipeline and inbox"  # -> daily-briefing
+  - "prep me for the City of Hope meeting"                      # -> call-prep
+
+expected_reads:
+  - "currentUser { TimeZoneSidKey"           # step 1 timezone
+  - "Event(scope: MINE"                        # step 3 event read
+  - "StartDateTime { value displayValue }"     # local-time rendering
+  - "What { ... on Account"                    # linked deal/account span
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Calendar -"
+  - "Time"
+  - "Event"
+  - "Total events:"
+output_must_link_records: true
+
+rubric:
+  - "Resolves the user's timezone and renders all times in local time, falling back to UTC with a note when unresolvable."
+  - "Computes the requested date range correctly (today / tomorrow / week / month / explicit range)."
+  - "Groups events by day with one table each; all-day and empty-location rows render cleanly."
+  - "Returns 'No events found' for an empty range rather than silently broadening the window."
+  - "Linked Accounts/Opportunities are shown by name and linked inline."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

@@ -1,0 +1,1 @@
+query { uiapi { query { Account(first: 50, orderBy: { Name: { order: ASC } }) { edges { node { Id Name { value } Website { value } Owner { Name { value } } } } } } } }

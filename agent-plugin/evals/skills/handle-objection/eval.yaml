@@ -1,0 +1,37 @@
+# Eval spec for the handle-objection skill. Schema: evals/README.md.
+
+skill: handle-objection
+posture: read-only
+
+should_trigger:
+  - "the customer says we're too expensive, how do I respond"
+  - "they want to wait until next year, help me handle it"
+  - "prospect is leaning toward a competitor, build me a talk track"
+should_not_trigger:
+  - "draft the follow-up email after the call"   # -> draft-outreach
+  - "why did we lose the Acme deal"              # -> win-loss-review
+
+expected_reads:
+  - "Opportunity(where:"
+  - "OpportunityContactRoles"
+  - "IsWon { value }"
+batched_in_one_turn: true
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "What's underneath it"
+  - "The response"
+  - "Proof points to have ready"
+  - "What history says"
+output_must_link_records: true
+
+rubric:
+  - "Classifies the objection type and distinguishes an objection from a negotiation move."
+  - "Answers with the customer's own stated goals plus at least one cited proof point."
+  - "Grounds 'what history says' in win/loss evidence, not generic advice."
+  - "Every proof point traces to a cited source (customer quote, case study, or metric)."
+  - "Never invents competitors, differentiators, or customer quotes."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

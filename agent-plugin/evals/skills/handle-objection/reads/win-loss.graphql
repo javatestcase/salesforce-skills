@@ -1,0 +1,1 @@
+query { uiapi { query { Opportunity(where: { IsClosed: { eq: true } }, orderBy: { CloseDate: { order: DESC } }, first: 15) { edges { node { Id Name { value } IsWon { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } Type { value } Account { Name { value } Industry { value } } } } } } } }

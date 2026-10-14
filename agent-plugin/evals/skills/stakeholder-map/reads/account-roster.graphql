@@ -1,0 +1,1 @@
+query { uiapi { query { Account(first: 1, orderBy: { LastModifiedDate: { order: DESC } }) { edges { node { Id Name { value } Contacts(first: 50) { edges { node { Id Name { value } Title { value } Email { value } Phone { value } ReportsTo { Name { value } Title { value } } } } } } } } } } }

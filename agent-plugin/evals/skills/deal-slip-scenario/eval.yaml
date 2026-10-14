@@ -1,0 +1,38 @@
+# Eval spec for the deal-slip-scenario skill. Schema: evals/README.md.
+
+skill: deal-slip-scenario
+posture: read-only
+
+should_trigger:
+  - "what if the top 3 deals slip this quarter"
+  - "does my number still hold if Cobalt pushes to next quarter"
+  - "model the gap if the Meridian deal is lost and what backfills it"
+should_not_trigger:
+  - "how healthy is the Cobalt deal"                   # -> deal-review
+  - "which of my deals have gone quiet"                # -> deal-signals
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"          # step 1 grounding
+  - "IsClosed: { eq: false }"                            # step 2 open opps this quarter
+  - "IsWon: { eq: true }"                                # step 2 closed-won baseline
+  - "ForecastCategory"                                   # step 2 commit/best-case buckets
+batched_in_one_turn: true      # step 2 open + closed-won reads fire together
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Slip Scenario"
+  - "Before vs After"
+  - "Substitute pipeline"
+  - "Verdict"
+output_must_link_records: true
+
+rubric:
+  - "Baseline (booked, commit total, best case, coverage ratio) is computed from the actual queried amounts."
+  - "The named scenario (slip / reduced / lost) is applied and commit, gap-to-quota, and coverage are recomputed."
+  - "Substitutes are drawn from real open pipeline with honest timing; a deal that can't land in the period is not counted."
+  - "Asks once for quota when it is not in org data rather than inventing it."
+  - "Date filters use the DateInput object form, never bare date strings."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 3

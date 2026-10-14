@@ -1,0 +1,37 @@
+# Eval spec for the lead-triage skill. Schema: evals/README.md.
+
+skill: lead-triage
+posture: read-only
+
+should_trigger:
+  - "triage this inbound lead"
+  - "is this lead worth pursuing and who should own it"
+  - "score and route this new lead"
+should_not_trigger:
+  - "draft an email to this lead"          # -> draft-outreach
+  - "sweep my inbox"                        # -> inbox-sweep
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Lead\"])"
+  - "objectInfos(apiNames: [\"Account\"])"
+  - "Lead(where:"
+  - "Account(where:"
+batched_in_one_turn: true
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Lead Triage"
+  - "Priority"
+  - "Route to"
+  - "ICP fit"
+
+rubric:
+  - "Assigns a priority (P0/P1/P2/DQ) with ICP-fit and intent evidence, not vibes."
+  - "If the account already has an owner, routing says coordinate with that owner."
+  - "Recommends a next step and hands drafting to draft-outreach; does not draft here."
+  - "Every fit/intent claim traces to Lead/Account data or research; nothing invented."
+  - "Read-only: no Salesforce writes, no email sent."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 4

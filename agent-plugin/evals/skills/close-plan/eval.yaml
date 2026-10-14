@@ -1,0 +1,38 @@
+# Eval spec for the close-plan skill. Schema: evals/README.md.
+
+skill: close-plan
+posture: read-only
+
+should_trigger:
+  - "build a close plan for the Cobalt deal"
+  - "map the path to signature on the Meridian expansion"
+  - "make a business case and mutual action plan for Delta Systems"
+should_not_trigger:
+  - "assess the health of the Meridian account before renewal"  # -> customer-health
+  - "rank my accounts into tiers"                                # -> account-tiering
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"   # step 1 grounding
+  - "Opportunity(where: { Name: { like:"          # step 2 opp read
+  - "OpportunityContactRoles {"                    # buying-side roles
+  - "Account { Name { value } }"                   # account span
+batched_in_one_turn: true      # step 2 opp read + evidence together
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Close Plan:"
+  - "Business Case (customer-facing doc)"
+  - "Mutual Action Plan (shared table)"
+  - "Claims to validate:"
+output_must_link_records: true
+
+rubric:
+  - "Business case is grounded in the customer's own words with each point cited to a call/email, and evidence-free claims are flagged to validate."
+  - "Mutual action plan works backward from the signature date with a step, owner, target date, and status per row."
+  - "Steps whose dates make the CloseDate impossible are flagged as date conflicts."
+  - "CRM-edit suggestions are framed as recommendations for the rep, not writes the skill performs."
+  - "The opportunity is linked inline and no content is invented."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

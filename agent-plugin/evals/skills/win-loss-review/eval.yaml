@@ -1,0 +1,37 @@
+# Eval spec for the win-loss-review skill. Schema: evals/README.md.
+
+skill: win-loss-review
+posture: read-only
+
+should_trigger:
+  - "run a win-loss review for last quarter"
+  - "why are we losing deals at Proposal"
+  - "compare win rates by segment across the team"
+should_not_trigger:
+  - "review my team's open pipeline"        # -> team-pipeline
+  - "assess whether the Cobalt deal will close" # -> deal-review
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"    # step 1 grounding
+  - "IsClosed: { eq: true }"                       # step 2 closed-deal window
+  - "IsWon { value }"                              # step 2 win/loss split
+  - "OpportunityHistories"                         # step 2 stage-history child
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Win-Loss Review"
+  - "Win Rate"
+  - "Where Losses Die"
+  - "Recommended Actions"
+output_must_link_records: true
+
+rubric:
+  - "Computes explicit date boundaries for the window rather than a drifting relative literal."
+  - "Derives loss death-stage from the last non-closed stage in history, not 'Closed Lost'."
+  - "Reconciles headline win-rate totals with the detail rows; nothing invented."
+  - "Qualitative loss reasons cite a specific transcript/email with a date and source."
+  - "Recommended actions split into systemic, coaching, and data captures tied to the headline."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 3

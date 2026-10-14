@@ -1,0 +1,37 @@
+# Eval spec for the stakeholder-map skill. Schema: evals/README.md.
+
+skill: stakeholder-map
+posture: read-only
+
+should_trigger:
+  - "map the stakeholders on the Cobalt Robotics deal"
+  - "who are the decision makers at Meridian and are we single-threaded"
+  - "plan introductions into the economic buyer for this opportunity"
+should_not_trigger:
+  - "give me the account brief for Cobalt Robotics"   # -> account-context
+  - "draft an intro email to the CIO"                 # -> draft-outreach
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Contact\"])"     # step 1 grounding
+  - "OpportunityContactRoles"                   # step 2 Call A deal roles
+  - "Contacts(first: 50)"                       # step 2 Call B account roster
+  - "Account(where: { Name: { like:"           # step 2 account-scope read
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Stakeholder Map"
+  - "Coverage verdict"
+  - "Missing people and how to reach them"
+  - "This week"
+output_must_link_records: true
+
+rubric:
+  - "Resolves to exactly one account/opp; when ambiguous, asks the user to pick rather than probing."
+  - "Runs deal-scope reads as two parallel calls, never combined into one over-long query."
+  - "A 'champion' label requires an action the person took for the seller, not one-call advocacy."
+  - "Missing roles and single-thread risk are named, with concrete access paths to the gaps."
+  - "Dark contacts are surfaced for the rep to add; the skill never writes to Salesforce."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 4

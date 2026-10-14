@@ -1,0 +1,38 @@
+# Eval spec for the pipeline-review skill. Schema: evals/README.md.
+
+skill: pipeline-review
+posture: read-only
+
+should_trigger:
+  - "review my pipeline health"
+  - "how's my pipeline looking by stage"
+  - "build a pipeline assessment for Dana Ruiz"
+should_not_trigger:
+  - "review my whole team's pipeline"    # -> team-pipeline
+  - "what changed in my pipeline this week" # -> deal-signals
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"
+  - "aggregate"
+  - "groupBy: { StageName:"
+  - "OpportunityContactRoles"
+batched_in_one_turn: true
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "By stage (whole book)"
+  - "Top deals per stage"
+  - "At-risk"
+  - "Conversion Signal"
+output_must_link_records: true
+
+rubric:
+  - "Takes by-stage totals from the server-side aggregate and reconciles Σ stage $ with the open total."
+  - "Distinguishes whole-book findings (blank-NextStep from 2d) from sampled findings (staleness from the top-N sample)."
+  - "Resolves scope to one owner before reading; asks when a named rep is ambiguous rather than guessing."
+  - "Reports a pervasive flag once as a systemic finding rather than dumping every identical row."
+  - "Never fabricates cycle time or stage→stage conversion when the API can't supply it."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 6

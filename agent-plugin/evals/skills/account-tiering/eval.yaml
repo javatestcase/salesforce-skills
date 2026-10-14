@@ -1,0 +1,38 @@
+# Eval spec for the account-tiering skill. Schema: evals/README.md.
+
+skill: account-tiering
+posture: read-only
+
+should_trigger:
+  - "rank my book into tiers"
+  - "which accounts should I focus on this quarter"
+  - "score my accounts by ICP fit and engagement"
+should_not_trigger:
+  - "give me the full picture on the Acme account"   # -> account-context
+  - "assess the health of Meridian before renewal"   # -> customer-health
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Account\"])"   # step 1 grounding
+  - "Account(%SCOPE%, first: 200)"           # step 2 book read
+  - "Opportunities {"                          # open-opp engagement signal
+  - "Contacts {"                               # persona / multi-thread signal
+batched_in_one_turn: true      # step 2 book read + evidence together
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Account Tiering"
+  - "Tier A - Active Pursuit"
+  - "Tier B - Activate"
+  - "Coverage Gaps"
+output_must_link_records: true
+
+rubric:
+  - "Scores each account on both ICP fit and engagement using the documented weighted signals."
+  - "Places accounts into A/B/C/deprioritize tiers consistent with the fit × engagement 2x2."
+  - "Caps the book at first: 200 and asks the user to narrow rather than silently truncating a larger scope."
+  - "Surfaces coverage gaps (stale Tier A/B accounts, unscorable accounts missing firmographics)."
+  - "Every account is linked inline with a Lightning URL and no records are invented."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

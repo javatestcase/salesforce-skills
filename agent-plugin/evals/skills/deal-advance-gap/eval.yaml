@@ -1,0 +1,38 @@
+# Eval spec for the deal-advance-gap skill. Schema: evals/README.md.
+
+skill: deal-advance-gap
+posture: read-only
+
+should_trigger:
+  - "what has to happen to advance the Cobalt deal"
+  - "why is the Acme deal stuck and who owns the blockers"
+  - "is the close date on the Meridian opportunity credible"
+should_not_trigger:
+  - "how healthy is the Cobalt deal, will it close"   # -> deal-review
+  - "what if the top 3 deals slip this quarter"        # -> deal-slip-scenario
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"          # step 1 grounding
+  - "childRelationships"                                 # step 1 child schema
+  - "OpportunityContactRoles"                            # step 2b stakeholders
+  - "Tasks(first: 15"                                    # step 2b activity children
+batched_in_one_turn: true      # step 2a candidate resolve + 2c evidence searches
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Advance Gap"
+  - "Gaps blocking advancement"
+  - "Already in motion"
+  - "The path"
+output_must_link_records: true
+
+rubric:
+  - "Resolves a named deal to exactly one Id; on multiple candidates it lists them and asks rather than guessing."
+  - "Each exit criterion is marked Done / In motion / Not started with a cited source and the specific gap."
+  - "Open or future-dated tasks are treated as 'in motion', never as completed touches."
+  - "Gaps are sequenced into a shortest credible path with owners and the critical-path close date."
+  - "Flags when the critical path lands after the current CloseDate; invents no exit criteria."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 3

@@ -1,0 +1,1 @@
+query { uiapi { objectInfos(apiNames: ["Account"]) { fields { ApiName label } } } }

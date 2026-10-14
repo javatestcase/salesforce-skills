@@ -1,0 +1,38 @@
+# Eval spec for the call-prep skill. Schema: evals/README.md.
+
+skill: call-prep
+posture: read-only
+
+should_trigger:
+  - "prep me for my next call"
+  - "build a call brief for the City of Hope meeting"
+  - "what should I know before the Acme call tomorrow"
+should_not_trigger:
+  - "prep for my 1:1 with my rep"          # -> rep-context
+  - "draft a follow-up email after the call" # -> call-follow-up
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Account\"])"   # step 2 grounding
+  - "Event("                                   # step 1 meeting resolution
+  - "Account(where:"                           # step 3 account read
+  - "Task("                                    # step 3 activity read
+batched_in_one_turn: true      # step 3 account read + activity read + evidence together
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Call Prep"
+  - "Account Snapshot"
+  - "Who's in the room"
+  - "This call"
+output_must_link_records: true
+
+rubric:
+  - "Correctly resolves the meeting from the input pattern (my next call / named event / time / account)."
+  - "When multiple candidates match, it lists them and asks the user to pick rather than guessing."
+  - "New attendees (no prior CRM contact / no thread) are explicitly flagged."
+  - "The call objective and discovery questions fit the opportunity stage."
+  - "Every claim about history traces to a cited source (email/doc/slack) with a date."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 6

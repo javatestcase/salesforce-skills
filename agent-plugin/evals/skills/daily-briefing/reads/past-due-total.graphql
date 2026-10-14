@@ -1,0 +1,1 @@
+query { uiapi { aggregate { Opportunity(where: { IsClosed: { eq: false }, CloseDate: { lt: { literal: TODAY } } }) { edges { node { aggregate { Amount { sum { value displayValue } } Id { count { value } } } } } } } } }

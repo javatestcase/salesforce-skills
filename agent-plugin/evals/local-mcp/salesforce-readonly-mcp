@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""
+salesforce-readonly-mcp: a small, dependency-free MCP server (stdio) that gives this plugin's
+skills READ-ONLY access to Salesforce through the Salesforce CLI (`sf`).
+
+A local TEST tool, not part of the shipped plugin: the plugin's mcp.json uses Salesforce's hosted
+Headless 360 server. Register this one in a client's own MCP settings (e.g. Kiro's
+.kiro/settings/mcp.json) to try the skills against a sandbox org without the hosted server's
+setup. See ../../SETUP.md, "Testing locally without Headless 360".
+
+Tool
+  dispatch_readonly(method, url, queryParams)   same signature as the Headless 360 tool, so the
+                                                skills' calls run unchanged. Supports:
+    GET /services/data/vXX.X/graphql  queryParams: { "queryInput": "{\"query\":\"...\"}" }
+    GET /services/data/vXX.X/query    queryParams: { "q": "SELECT ..." }
+
+Read-only: only GET is accepted, only those two endpoints are exposed, a GraphQL document
+containing a mutation or subscription is rejected before any call is made, and SOQL must be a
+SELECT.
+
+Org: set SF_TARGET_ORG (an sf alias or username); otherwise sf's default target org is used.
+Auth stays inside `sf`: no access token passes through this process.
+
+Protocol: JSON-RPC 2.0, newline-delimited on stdin/stdout. Logs go to stderr only.
+"""
+
+import html
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import urllib.parse
+
+SERVER_INFO = {"name": "salesforce-readonly", "version": "0.2.0"}
+PROTOCOL_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
+
+TOOLS = [
+    {
+        "name": "dispatch_readonly",
+        "title": "Salesforce read (Headless 360-compatible)",
+        "description": (
+            "Execute a read-only Salesforce REST call and return the JSON response. Same "
+            "signature as Headless 360's dispatch_readonly. Supported: GET "
+            "/services/data/vXX.X/graphql with queryParams.queryInput = a JSON string "
+            "{\"query\": \"...\"}, and GET /services/data/vXX.X/query with queryParams.q = a "
+            "SOQL SELECT. GraphQL mutations and subscriptions are rejected."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "method": {"type": "string", "enum": ["GET"], "description": "HTTP method; only GET"},
+                "url": {"type": "string", "description": "e.g. /services/data/v65.0/graphql or /services/data/v63.0/query"},
+                "queryParams": {
+                    "type": "object",
+                    "description": "{ \"queryInput\": \"{\\\"query\\\":\\\"...\\\"}\" } for GraphQL, { \"q\": \"SELECT ...\" } for SOQL",
+                },
+            },
+            "required": ["method", "url", "queryParams"],
+        },
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": True},
+    },
+]
+URL_RE = re.compile(r"^/services/data/v(\d{2}\.\d)/(graphql|query)$")
+
+
+def log(msg):
+    print(f"[salesforce-readonly-mcp] {msg}", file=sys.stderr, flush=True)
+
+
+class ToolError(Exception):
+    pass
+
+
+def graphql_is_read(query):
+    stripped = re.sub(r'"(?:[^"\\]|\\.)*"', '""', query)   # ignore string literals
+    stripped = re.sub(r"#[^\n]*", "", stripped)            # ignore comments
+    if re.search(r"\b(mutation|subscription)\b", stripped):
+        return False
+    return re.match(r"\s*(query\b|\{|fragment\b)", stripped) is not None
+
+
+def unescape(obj):
+    """Salesforce returns HTML-escaped text (&amp;, &#39;). Restore it for readability."""
+    if isinstance(obj, str):
+        return html.unescape(obj)
+    if isinstance(obj, list):
+        return [unescape(x) for x in obj]
+    if isinstance(obj, dict):
+        return {k: unescape(v) for k, v in obj.items()}
+    return obj
+
+
+def sf_rest(path, method, body=None):
+    """Call Salesforce through `sf api request rest`. Returns parsed JSON."""
+    cmd = ["sf", "api", "request", "rest", path, "--method", method]
+    org = os.environ.get("SF_TARGET_ORG")
+    if org:
+        cmd += ["--target-org", org]
+    tmp = None
+    try:
+        if body is not None:
+            fd, tmp = tempfile.mkstemp(suffix=".json")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(body, f)
+            cmd += ["--body", f"@{tmp}"]
+        env = dict(os.environ, SF_SKIP_NEW_VERSION_CHECK="true")
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
+        except FileNotFoundError:
+            raise ToolError("the Salesforce CLI (sf) is not on PATH")
+        except subprocess.TimeoutExpired:
+            raise ToolError("Salesforce call timed out after 120s")
+    finally:
+        if tmp and os.path.exists(tmp):
+            os.remove(tmp)
+    out = proc.stdout
+    starts = [i for i in (out.find("{"), out.find("[")) if i != -1]
+    if not starts:
+        detail = (proc.stderr or out).strip()[:500]
+        raise ToolError(f"no JSON from sf (exit {proc.returncode}): {detail}")
+    try:
+        return unescape(json.loads(out[min(starts):]))
+    except json.JSONDecodeError as e:
+        raise ToolError(f"unparseable response from sf: {e}")
+
+
+def call_tool(name, args):
+    """Returns (text, is_error)."""
+    if name != "dispatch_readonly":
+        raise ToolError(f"unknown tool {name!r}")
+    if str(args.get("method", "")).upper() != "GET":
+        raise ToolError("rejected: dispatch_readonly accepts only method GET")
+    m = URL_RE.match(str(args.get("url", "")).strip())
+    if not m:
+        raise ToolError("rejected: supported urls are /services/data/vXX.X/graphql and /services/data/vXX.X/query")
+    version, endpoint = m.groups()
+    params = args.get("queryParams") or {}
+    if isinstance(params, str):
+        try:
+            params = json.loads(params)
+        except json.JSONDecodeError:
+            raise ToolError("queryParams must be an object")
+
+    if endpoint == "graphql":
+        raw = params.get("queryInput")
+        try:
+            body = json.loads(raw) if isinstance(raw, str) else raw
+        except json.JSONDecodeError as e:
+            raise ToolError(f"queryInput is not valid JSON: {e}")
+        query = (body or {}).get("query") if isinstance(body, dict) else None
+        if not isinstance(query, str) or not query.strip():
+            raise ToolError('queryParams.queryInput must be a JSON string like {"query":"query { ... }"}')
+        if not graphql_is_read(query):
+            raise ToolError("rejected: only GraphQL queries are allowed (no mutation or subscription)")
+        payload = {k: v for k, v in body.items() if k in ("query", "variables", "operationName")}
+        result = sf_rest(f"/services/data/v{version}/graphql", "POST", payload)
+        is_error = isinstance(result, list) or bool(isinstance(result, dict) and result.get("errors"))
+        return json.dumps(result, ensure_ascii=False, separators=(",", ":")), is_error
+
+    soql = params.get("q")
+    if not isinstance(soql, str) or not re.match(r"\s*select\b", soql, re.IGNORECASE):
+        raise ToolError("rejected: queryParams.q must be a SOQL SELECT statement")
+    result = sf_rest(f"/services/data/v{version}/query?q={urllib.parse.quote(soql.strip())}", "GET")
+    return json.dumps(result, ensure_ascii=False, separators=(",", ":")), isinstance(result, list)
+
+
+def handle(msg):
+    """Returns a response dict, or None for notifications."""
+    method, msg_id = msg.get("method"), msg.get("id")
+    if msg_id is None:  # notification (e.g. notifications/initialized): no response
+        return None
+    if method == "initialize":
+        requested = (msg.get("params") or {}).get("protocolVersion")
+        version = requested if requested in PROTOCOL_VERSIONS else PROTOCOL_VERSIONS[0]
+        result = {"protocolVersion": version, "capabilities": {"tools": {"listChanged": False}},
+                  "serverInfo": SERVER_INFO}
+    elif method == "ping":
+        result = {}
+    elif method == "tools/list":
+        result = {"tools": TOOLS}
+    elif method == "tools/call":
+        params = msg.get("params") or {}
+        try:
+            text, is_error = call_tool(params.get("name"), params.get("arguments") or {})
+        except ToolError as e:
+            text, is_error = f"error: {e}", True
+        result = {"content": [{"type": "text", "text": text}], "isError": is_error}
+    else:
+        return {"jsonrpc": "2.0", "id": msg_id, "error": {"code": -32601, "message": f"method not found: {method}"}}
+    return {"jsonrpc": "2.0", "id": msg_id, "result": result}
+
+
+def send(obj):
+    sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+
+
+def main():
+    log(f"started (org: {os.environ.get('SF_TARGET_ORG') or 'sf default'})")
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            msg = json.loads(line)
+        except json.JSONDecodeError:
+            send({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}})
+            continue
+        if not isinstance(msg, dict):
+            send({"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "invalid request"}})
+            continue
+        response = handle(msg)
+        if response is not None:
+            send(response)
+
+
+if __name__ == "__main__":
+    main()

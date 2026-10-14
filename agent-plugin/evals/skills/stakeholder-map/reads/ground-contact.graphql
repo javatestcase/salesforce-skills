@@ -1,0 +1,1 @@
+query { uiapi { objectInfos(apiNames: ["Contact"]) { fields { ApiName label relationshipName } } } }

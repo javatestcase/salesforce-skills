@@ -1,0 +1,35 @@
+# Eval spec for the salesforce-hygiene-check skill. Schema: evals/README.md.
+
+skill: salesforce-hygiene-check
+posture: read-only
+
+should_trigger:
+  - "check my pipeline data quality"
+  - "find incomplete deals in my open opps"
+  - "audit my opportunities for hygiene issues"
+should_not_trigger:
+  - "review my pipeline for the quarter"    # -> pipeline-review
+  - "draft an email to this contact"        # -> draft-outreach
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"
+  - "Opportunity(scope: MINE"
+batched_in_one_turn: false
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Salesforce Hygiene Check"
+  - "Critical"
+  - "Attention"
+  - "Fix List"
+
+rubric:
+  - "Flags each issue (blank amount, past/stale close, weak next step, single-threading) against query results, nothing invented."
+  - "Bucket counts reconcile: critical + attention + clean = total open."
+  - "Suggested values cite real Contact names and grounded labels, not generic placeholders."
+  - "Output is a recommendations checklist the rep applies themselves; the skill writes nothing to Salesforce."
+  - "Read-only: no write verbs, no record changes — recommendations only."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

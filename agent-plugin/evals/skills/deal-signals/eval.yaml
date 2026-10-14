@@ -1,0 +1,37 @@
+# Eval spec for the deal-signals skill. Schema: evals/README.md.
+
+skill: deal-signals
+posture: read-only
+
+should_trigger:
+  - "which of my deals have gone quiet"
+  - "flag any deals with close-date danger this week"
+  - "what risks in my pipeline need attention right now"
+should_not_trigger:
+  - "how healthy is the Cobalt deal"                   # -> deal-review
+  - "what if the top 3 deals slip this quarter"        # -> deal-slip-scenario
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Opportunity\"])"          # step 1 grounding
+  - "Opportunity(scope: MINE"                            # step 2 open book
+  - "LastActivityDate"                                   # step 2/3 quiet + threshold fields
+  - "ForecastCategory"                                   # step 2 forecast signal
+batched_in_one_turn: true      # step 2 read + step 2b evidence for flagged accounts
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Deal Signals"
+  - "Act today"
+  - "This week"
+output_must_link_records: true
+
+rubric:
+  - "A signal fires only when the record shows its trigger; no threshold is invented."
+  - "Threshold dates are computed explicitly from today, never quarter-relative."
+  - "Each fired signal shows the trigger value plus one or two supporting facts, separated for scannability."
+  - "No per-opp Salesforce follow-up reads are issued; evidence comes only from external connectors."
+  - "A quiet sweep (nothing crossed a threshold) is reported as success with the opp count."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

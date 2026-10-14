@@ -1,0 +1,36 @@
+# Eval spec for the research-prospect skill. Schema: evals/README.md.
+
+skill: research-prospect
+posture: read-only
+
+should_trigger:
+  - "research Beacon Health before I reach out"
+  - "build a prospect brief on this net-new company"
+  - "who is the CIO at Acme and are they a fit for us"
+should_not_trigger:
+  - "give me the account brief for our existing Meridian account"  # -> account-context
+  - "draft an intro email to the Beacon CIO"                        # -> draft-outreach
+
+expected_reads:
+  - "objectInfos(apiNames: [\"Account\"])"       # step 2 grounding
+  - "Account(where: { Name: { like:"              # step 2 duplicate-check by name
+  - "Website: { like:"                            # step 2 domain fallback
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Prospect Research"
+  - "CRM Status"
+  - "ICP Fit"
+  - "Relevance Hooks"
+output_must_link_records: true
+
+rubric:
+  - "Does a CRM duplicate-check and prominently flags when the company is already owned by a colleague."
+  - "Matches on Name first, falling back to a Website-only match — never a two-clause or in the where."
+  - "Recent signals each carry a date and a source; nothing is invented."
+  - "ICP fit verdict is scored against org data / ICP, with a one-sentence rationale."
+  - "Relevance hooks are specific and sourced, not generic growth claims."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 3

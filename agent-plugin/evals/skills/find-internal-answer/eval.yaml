@@ -1,0 +1,36 @@
+# Eval spec for the find-internal-answer skill. Schema: evals/README.md.
+
+skill: find-internal-answer
+posture: read-only
+
+should_trigger:
+  - "who approves a discount over 20%"
+  - "where's the current security questionnaire we send prospects"
+  - "who on the team has sold into healthcare before"
+should_not_trigger:
+  - "prep me for my next call"                  # -> call-prep
+  - "what's my pipeline coverage this quarter"  # -> pipeline-review
+
+expected_reads:
+  - "Opportunity(where:"
+  - "Owner { Name { value } }"
+  - "orderBy: { LastModifiedDate: { order: DESC } }"
+batched_in_one_turn: true
+forbidden_endpoints: ["discover", "describe"]
+
+output_must_contain:
+  - "Answer"
+  - "Source"
+  - "Caveats"
+  - "Who to ask if this isn't current"
+output_must_link_records: true
+
+rubric:
+  - "Searches in authority order (canonical config → docs → Slack → email → Salesforce) and stops when answered."
+  - "Returns the actual source with a last-updated date, not a synthesized paraphrase."
+  - "For 'who approves' questions, surfaces owners of recent similar opps as people to ask, not as the written rule."
+  - "When nothing authoritative exists, says so and names the person most likely to know rather than inventing a policy."
+
+efficiency:
+  no_repeated_identical_reads: true
+  max_salesforce_reads: 2

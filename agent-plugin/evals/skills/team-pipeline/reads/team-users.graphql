@@ -1,0 +1,1 @@
+query { uiapi { query { User(where: { IsActive: { eq: true } }, first: 50, orderBy: { Name: { order: ASC } }) { edges { node { Id Name { value } Title { value } Email { value } } } } } } }
