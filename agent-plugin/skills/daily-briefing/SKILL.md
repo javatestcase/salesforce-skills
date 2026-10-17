@@ -11,102 +11,84 @@ Failing to try first — asking the user to connect, or surfacing a "not connect
 
 - **Execute silently between tool calls.** Do not output planning, progress, transition, waiting, or tool-result narration between calls. Execute tool calls silently and proceed directly to the next call. Parallelize independent tasks by batching tool calls into one turn whenever possible. Before the final output, speak only when the skill explicitly requires user input, approval, an exact notice, or material error/blocked reporting. Do not invent checkpoints.
 - **Keep the final output concise.** Return only the requested result or deliverable. Omit process recaps, tool-call details, redundant preambles or conclusions, and data already shown in a widget.
+- **⛔ WIDGET OUTPUT ONLY after data assembly.** Once all queries return, immediately call `display_widget` — at most a single one-line render-wait notice before it, and no summaries, transitions, or narration. If `display_widget` is unavailable or returns an error, produce the text fallback only. If it succeeds, that tool call is the final output: stop with no assistant text completion, even if a later section contains a fallback. The exceptions above do not apply after success.
 - **Ground dynamic or custom relationship and field names before relying on them.** Fixed standard fields that this skill explicitly marks as requiring no grounding need no extra grounding call. On a name error, use the skill's documented grounding path when present; otherwise report the error instead of guessing or re-firing the same shape.
 - **Cite every value exactly as queried**; never fabricate; distinguish a blank value from a value that was not queried. Link each Salesforce record inline: `https://[instanceUrl]/lightning/r/[SObjectType]/[Id]/view`.
 - **Show human labels, never API/field literals.** In anything the user sees, print each field's grounded `label` (for example, "Deal Risk", not `Deal_Risk__c`) and record Names, never raw Ids or `__c` API names.
 - **Empty `MINE` scope → fail fast, then ask which scope.** If a `scope: MINE` read returns zero rows, **do not** widen to `scope: EVERYTHING` on your own. Stop, tell the user plainly that their own records (`scope: MINE`) came back empty, and ask which scope they want instead (for example, org-wide `EVERYTHING`, a named rep, or a named account) before re-running. Never invent records, and never silently fall back to org-wide.
 - **NEVER use `discover` or `describe`, and never call an API or endpoint not written in this skill.** Every Salesforce URL you need is in the skill. Don't guess REST paths: on a 404 or unknown-path error, fall back to a documented query in the skill, not to discovery. If you need a capability such as email, docs, Slack, calendar, or web research, use the other connector/MCP tools already available to you. Endpoint guessing and discovery add needless round-trips. Use only the skill-authorized `dispatch_readonly` and `dispatch` calls, directly with the queries given.
-> **Portability note.** Written for the Agent Plugins standard. Salesforce calls use the
-> Headless 360 MCP tool `dispatch_readonly`, exactly as in the original plugin; this skill is
-> read-only. On a host whose Salesforce connector has a different read tool (for example,
-> Amazon Quick), send the same `url` and query through that tool.
 <!-- /global-rules-bootstrap -->
+# Rules:
 
-# Rules
-
-- Parallelize everything independent. This is a morning routine — speed matters; fire the running-user lookup, calendar, closing-soon, past-due, their two totals, and inbox in ONE turn.
-- **Totals come from Salesforce, not arithmetic.** Show counts and dollar totals only from the aggregate reads in step 2; never sum or count rows yourself.
-- **Read-only.** This skill never writes to Salesforce. It surfaces and links records; drafting/sending is handed off to other skills (e.g. `inbox-sweep`, `draft-outreach`).
+- Parallelize everything independent. This is a morning routine — speed matters; fire the running-user lookup, calendar, closing-soon, and inbox in ONE turn.
 
 # Daily Briefing
 
-Ground → (calendar + closing-soon + past-due + inbox, ALL in ONE turn) → match meetings to accounts (one batched turn) → flag → output. This is today's rundown, not a pipeline review — closing-soon is a small bounded set, so pull concrete rows, don't aggregate.
+Ground → (calendar + closing-soon + inbox, ALL in ONE turn) → match meetings to accounts (one batched turn) → flag → output. This is today's rundown, not a pipeline review — closing-soon is a small bounded set, so pull concrete rows, don't aggregate.
 
 ## 1. Ground (hardcoded — Opportunity only; fire with the step-2 batch)
 
-Ground **only Opportunity** — it always exists. Reveals this org's stage/next-step/activity `__c` names so the closing-soon read can surface them; don't assume names.
+Ground **only Opportunity** — it always exists (naming a missing object fails the whole call). Reveals this org's stage/next-step/activity `__c` names so the closing-soon read can surface them; don't assume names.
 
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { objectInfos(apiNames: [\\\"Opportunity\\\"]) { fields { ApiName label } } } }\"}" })
 ```
 
-Step 1 is the authority on names — use exact strings, never guess. On customized orgs the response can be large; filter to `__c` fields whose `label` matches your keywords. Standard fields (`Amount`, `CloseDate`, `StageName`, `NextStep`, `LastActivityDate`) and `Account`/`Owner` spans are reliable across orgs.
+Step 1 is the authority on names — use exact strings, never guess. **Response can be large** on customized orgs — if it truncates and auto-saves to a temp file, don't shell to that file (it's outside the bash mount) and don't read it whole; read it back directly and filter to `__c` fields whose `label` matches your keywords. Grounding is best-effort (customs are additive); standard fields (`Amount`, `CloseDate`, `StageName`, `NextStep`, `LastActivityDate`) and `Account`/`Owner` spans are reliable across orgs.
 
-## 2. Read — running user + calendar + closing-soon + past-due + inbox, ALL IN ONE TURN
+## 2. Read — running user + calendar + closing-soon + past-due + inbox, ISSUE ALL IN ONE TURN
 
-Five independent reads plus two section-total aggregates (plus step 1) — batch them in a single turn. Insert `<OPP_CUSTOM>` = confirmed `__c { value }` fields from step 1.
+Five independent reads (plus step 1) — batch them in a single turn. Insert `<OPP_CUSTOM>` = confirmed `__c { value }` fields.
 
-**2a. Today's calendar** — today's meetings for the running user. Read the calendar from the `Event` object via GraphQL (below), or a dedicated calendar connector if one is present. Do NOT guess a REST path.
+**2a. Today's calendar** — today's meetings for the running user. There is **no `/connect/calendar/...` REST resource on this server** — read the calendar from the `Event` object via GraphQL (below), or a dedicated calendar connector tool if one is present. Do NOT guess a REST path or reach for `discover` on a 404; the query here is the path.
 
-`Event.What`/`Event.Who` are polymorphic and expose no `Name` span — pull the raw `WhatId`/`WhoId` scalars. A `001…` `WhatId` is an Account, `006…` an Opportunity — resolve it in step 3.
+**Shape gotcha — `Event.What`/`Event.Who` are polymorphic** (`Event_What` / `Event_Who` unions) and expose **no `Name` span**: `What { Name { value } }` throws a schema error. Pull the raw `WhatId` / `WhoId` scalars instead. `WhatId` is your best account link — a `001…` Id is an Account, `006…` an Opportunity — resolve it directly in step 3 (no domain-guessing for those). Get attendee email domains from the `Description`/`Location` text, or an `EventRelation` child if you need invitees.
 
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Event(scope: MINE, where: { ActivityDate: { eq: { literal: TODAY } } }, first: 50, orderBy: { StartDateTime: { order: ASC } }) { edges { node { Id Subject { value } StartDateTime { value } EndDateTime { value } Location { value } WhatId { value } WhoId { value } Description { value } } } } } } }\"}" })
 ```
 
-`scope: MINE` returns events you own. Invitee-only meetings live under `EventRelation` and may not appear — an empty calendar usually means that or a genuinely clear day, not a failure; say which.
+`scope: MINE` returns events **you own** (organize). Meetings where you're only an invitee live under `EventRelation` and may not appear here — an empty calendar usually means that or a genuinely clear day, not a failure; say which. Extract each event's external-attendee email domains and its `WhatId`; those are the input to step 3.
 
-**2b. Closing soon** — the rep's open opps closing in the next 14 days. Pull concrete rows (`first: 50`), not an aggregate. Date filters take a `DateInput` object, never a bare string. "Closing in the next 14 days" = `CloseDate: { gte: { literal: TODAY }, lte: { range: { next_n_days: 14 } } }`:
+**2b. Closing soon** — the rep's open opps closing in the next 14 days. A small filtered set — pull concrete rows (`first: 50`), not an aggregate.
 
+**Date filters take a `DateInput` object, never a bare string** (`gte: \"…\"` fails `WrongType … must be an object type`). Three forms, each nested under a comparison op (`gte`/`lte`/`eq`); multiple ops on one field are AND'd automatically (no `and: [...]` wrapper):
+- **relative window** (preferred here — no client-side date math): `{ range: { next_n_days: 14 } }` / `{ range: { last_n_days: 30 } }`. Keys come in `last_n_*` / `next_n_*` / `n_*_ago` families over `days|weeks|months|quarters|years` (e.g. `last_n_months: 3`, `n_days_ago: 2`).
+- **relative period**: `{ literal: LAST_QUARTER }` (or `THIS_QUARTER`, `TODAY`, …).
+- **exact date**: `{ value: \"YYYY-MM-DD\" }`.
+
+So "closing in the next 14 days" = `CloseDate: { gte: { literal: TODAY }, lte: { range: { next_n_days: 14 } } }`:
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { gte: { literal: TODAY }, lte: { range: { next_n_days: 14 } } } }, first: 50, orderBy: { CloseDate: { order: ASC } }) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } NextStep { value } LastActivityDate { value } <OPP_CUSTOM> Account { Name { value } } } } } } } }\"}" })
 ```
+(To widen the window, change `next_n_days`; for a named period the user gives, swap to the exact-date form `{ value: \"YYYY-MM-DD\" }` on both bounds.)
 
-**2c. Past due** — the rep's open opps with a close date in the past (still not closed):
-
+**2c. Past due** — the rep's open opps with close date in the past (still not closed). Pull concrete rows (`first: 50`) for the `pastDueRows` widget datagrid:
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { lt: { literal: TODAY } } }, first: 50, orderBy: { CloseDate: { order: ASC } }) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } NextStep { value } LastActivityDate { value } <OPP_CUSTOM> Account { Name { value } } } } } } } }\"}" })
 ```
 
-**2b-total / 2c-total. Section totals** — the count and `Amount` sum for 2b and 2c, computed by Salesforce. Issue both in the same turn as 2b/2c. Each MUST use the exact same `scope` and `where` as its row read, or the totals won't match the rows:
+**2d. Inbox signal** — unread email from the last 48h whose sender domain matches an account you own (email tool). Sender, subject, domain only — don't read bodies (that's `inbox-sweep`).
 
-```
-dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { aggregate { Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { gte: { literal: TODAY }, lte: { range: { next_n_days: 14 } } } }) { edges { node { aggregate { Amount { sum { value displayValue } } Id { count { value } } } } } } } } }\"}" })
-```
-
-```
-dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { aggregate { Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { lt: { literal: TODAY } } }) { edges { node { aggregate { Amount { sum { value displayValue } } Id { count { value } } } } } } } } }\"}" })
-```
-
-**Totals rule:** every count or dollar total you show comes from these aggregate reads, quoted as returned (use `displayValue`). Never add up or count rows yourself. The aggregates cover every matching record, while the row reads stop at `first: 50`, so when the count is larger than the rows you have, say so: "showing [rows] of [count]". If an aggregate read fails, show the rows without a total and say the total is unavailable.
-
-**2d. Inbox signal** — unread email from the last 48h whose sender domain matches an account you own (email connector). Sender, subject, domain only — don't read bodies (that's `inbox-sweep`).
-
-**2e. Running user** — who the briefing is for, their name, and timezone. `currentUser` needs no Id and requires **v66.0** (bump the version in the URL for this one call):
-
+**2e. Running user** — who's the briefing for, their name, and timezone. The running-user record needs **no Id** — `currentUser` always resolves to the signed-in user. It requires **v66.0** specifically (the GraphQL endpoint otherwise pins v65.0 — bump the version in the URL for this one call):
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v66.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { currentUser { Id Name { value } Email { value } TimeZoneSidKey { value } } } }\"}" })
 ```
+Use `Name` for the briefing title/date header; `TimeZoneSidKey` to render "today" and last-touch ages in the rep's zone (2b/2c's windows are resolved server-side, so no client date math); `Email` domain as a fallback when matching your own account inbox in 2d.
 
-Use `Name` for the header; `TimeZoneSidKey` to render "today" and last-touch ages in the rep's zone; `Email` domain as a fallback when matching your own account inbox in 2d.
+## 3. Meeting context — ONE batched turn (depends on 2a's domains)
 
-## 3. Meeting context — ONE batched turn (depends on 2a's WhatIds/domains)
-
-Resolve every meeting's account in **one** query, OR-ing two kinds of match: (a) any `WhatId` from 2a that is an Account (`001…`) → `Id: { eq }`, or an Opportunity (`006…`) → its `AccountId`; (b) external-attendee email domains → `Website` `like`. Prefer the direct `WhatId` link; fall back to domain match only when there's no usable `WhatId`.
-
+Resolve every meeting's account in **one** query (not per-meeting), OR-ing two kinds of match together: (a) any `WhatId` from 2a that is an Account (`001…`) → `Id: { eq }`, or an Opportunity (`006…`) → its `AccountId`; (b) the external-attendee domains → `Website` `like`. Prefer the direct `WhatId` link when present — it's exact; fall back to domain match only for meetings with no usable `WhatId`.
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Account(where: { or: [ { Id: { in: [\\\"<WhatId account 001…>\\\"] } }, { Website: { like: \\\"%domain1%\\\" } }, { Website: { like: \\\"%domain2%\\\" } } ] }, first: 25) { edges { node { Id Name { value } Website { value } LastActivityDate { value } Opportunities(where: { IsClosed: { eq: false } }, first: 5, orderBy: { Amount: { order: DESC } }) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } } } } } } } } } }\"}" })
 ```
-
-In the same turn, per matched account: a **docs** search (most recent transcript/notes/plan — title + one line) and a **"you owe them"** email search (sent-mail promises still unfulfilled). No account match → `(no CRM match — net new or personal)`.
+In the same turn, per matched account: **docs** search (most recent transcript/notes/plan — title + one-line) and **"you owe them"** email search (sent-mail promises to those attendees — "I'll send/get you/intro" — still unfulfilled). No account match → `(no CRM match — net new or personal)`.
 
 ## 4. Flag (record only; cite; invent nothing)
 
@@ -114,9 +96,485 @@ In the same turn, per matched account: a **docs** search (most recent transcript
 - **Inbox** — count customer-domain unreads; list the top 3 by matched-opp `Amount`.
 - **Per meeting** — time · title · attendees · account · open-opp stage+$ · last touch · one-line "why it matters" · **you owe** (or "nothing outstanding") · **walk in asking** (the one thing to get, given stage + context).
 
-## 5. Output — structured briefing (primary, portable)
+## 5. Output — widget FIRST (the rendered UI is the default)
 
-Assemble the briefing as Markdown. This is the deliverable in any host. Omit any section you have no data for; never emit placeholder tokens or empty lists.
+When the data is assembled, call `display_widget`; a single one-line "Displaying the visualization now (this may take a minute)." notice may precede it.
+
+### Self-verification (before calling display_widget)
+
+- [ ] `widgetDefinition` is passed as a native JSON object — not a quoted string, not a code block pasted as text. If the value starts with `"{"`, it is wrong.
+- [ ] The datagrid `rows` are typed: `amount`/`trend` are numbers/number arrays, not strings; risky rows carry `_tone`, healthy rows don't.
+- [ ] Every button's `onClick` is `action/sendMessage` with a real first-person `content` prompt — no decorative buttons.
+- [ ] No pie/bar/meter/heatmap/waterfall tiles — the sparkline column in the opportunity datagrid is the only inline visual.
+- [ ] The #1-move callout leads; the stat strip and flags support it.
+
+The widget template is embedded below — resolve its tokens and call `display_widget({ resourceType: "dynamic", widgetDefinition: <hydrated> })` once (see the `widgetDefinition` param for token-resolution rules).
+
+Tokens: `dateEyebrow briefingTitle` (header) · `topMove topMoveDetail topMoveDraftMsg` (the #1 move callout with its primary action button) · `kpiEventsLine kpiEventsSub kpiPipelineLine kpiPipelineSub kpiGapsLine kpiGapsSub kpiFollowupsLine kpiFollowupsSub` (four-up stat strip — each `*Line` is the whole `"<n> <unit>"` headline, e.g. `"7 meetings"`, `"$495K"`, `"2 opps"`) · `flag1Title flag1Sub flag1Msg flag2Title flag2Sub flag2Msg flag3Title flag3Sub flag3Msg flag4Title flag4Sub` (attention flags with sendMessage buttons, except flag4) · `meetingsHeading meeting1Time meeting1Title meeting1Ask meeting2Time meeting2Title meeting2Ask meeting3Line meeting4Line` (`meetingsHeading` is the section title incl. count e.g. `"Today's meetings — 4, 2 external"`; two detailed meetings render as walk-in-asking callouts — put the `"$45K · closes today"`-style tag inline in `meetingNTitle`; the two compact meetings are a single `meetingNLine` string each) · `oweHeading owe1Title owe1Meta owe1Msg owe2Title owe2Meta owe2Msg inboxClear` (`oweHeading` incl. count; open-promise cards; inbox-clear caption when empty) · `oppsSummary closingLabel gridColumns closingRows pastDueLabel pastDueRows` (accordion with two datagrids sharing one `gridColumns` schema; each is preceded by its `*Label` incl. count+$; each row object is `{ name (plain string — format as "<Account> — <Opp Name>", e.g. "Okta — Support Uplift"; concatenate `Account.Name.value` and `Opportunity.Name.value` from the SF response — plain strings, not objects), stage, trend, close (plain string — human-readable relative date, e.g. "Today", "Jul 31 · tomorrow", "Jul 15 · 15d past"; NOT ISO YYYY-MM-DD), amount, next, _tone }` where `amount`/`trend` are numbers/number[], risky rows carry `_tone:"error"`/`"warning"`; `gridColumns` is the typed column array — keep the `trend` sparkline column). Omit any block whose data you lack; drop the column if no activity history; do not send empty arrays or leave stray {{tokens}}.
+
+```json
+{
+  "renderer": {
+    "componentOverrides": {
+      "$": {
+        "type": "mosaic",
+        "definition": "tile/widget",
+        "children": [
+          {
+            "definition": "tile/column",
+            "attributes": {
+              "gap": "sm"
+            },
+            "children": [
+              {
+                "definition": "tile/text",
+                "attributes": {
+                  "text": "{{dateEyebrow}}",
+                  "weight": "semibold",
+                  "color": "muted",
+                  "variant": "caption"
+                }
+              },
+              {
+                "definition": "tile/text",
+                "attributes": {
+                  "text": "{{briefingTitle}}",
+                  "variant": "h1"
+                }
+              }
+            ]
+          },
+          {
+            "definition": "tile/separator"
+          },
+          {
+            "definition": "tile/callout",
+            "attributes": {
+              "variant": "recommended",
+              "eyebrow": "YOUR #1 MOVE TODAY",
+              "title": "{{topMove}}",
+              "description": "{{topMoveDetail}}"
+            },
+            "children": [
+              {
+                "definition": "tile/button",
+                "attributes": {
+                  "label": "Draft next step",
+                  "variant": "primary",
+                  "actions": {
+                    "click": [
+                      {
+                        "definition": "action/sendMessage",
+                        "attributes": {
+                          "content": "{{topMoveDraftMsg}}"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "definition": "tile/row",
+            "attributes": {
+              "gap": "md",
+              "align": "stretch",
+              "isWrapped": true
+            },
+            "children": [
+              {
+                "definition": "tile/column",
+                "attributes": {
+                  "gap": "none"
+                },
+                "children": [
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{kpiEventsLine}}",
+                      "variant": "h4"
+                    }
+                  },
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{kpiEventsSub}}",
+                      "variant": "caption",
+                      "color": "muted"
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/column",
+                "attributes": {
+                  "gap": "none"
+                },
+                "children": [
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{kpiPipelineLine}}",
+                      "variant": "h4"
+                    }
+                  },
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{kpiPipelineSub}}",
+                      "variant": "caption",
+                      "color": "muted"
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/column",
+                "attributes": {
+                  "gap": "none"
+                },
+                "children": [
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{kpiGapsLine}}",
+                      "variant": "h4",
+                      "color": "error"
+                    }
+                  },
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{kpiGapsSub}}",
+                      "variant": "caption",
+                      "color": "muted"
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/column",
+                "attributes": {
+                  "gap": "none"
+                },
+                "children": [
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{kpiFollowupsLine}}",
+                      "variant": "h4"
+                    }
+                  },
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{kpiFollowupsSub}}",
+                      "variant": "caption",
+                      "color": "muted"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "definition": "tile/separator"
+          },
+          {
+            "definition": "tile/text",
+            "attributes": {
+              "text": "Needs your attention",
+              "variant": "section-title"
+            }
+          },
+          {
+            "definition": "tile/column",
+            "attributes": {
+              "gap": "sm"
+            },
+            "children": [
+              {
+                "definition": "tile/callout",
+                "attributes": {
+                  "variant": "error",
+                  "title": "{{flag1Title}}",
+                  "description": "{{flag1Sub}}"
+                },
+                "children": [
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "Draft next step",
+                      "variant": "secondary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/sendMessage",
+                            "attributes": {
+                              "content": "{{flag1Msg}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/callout",
+                "attributes": {
+                  "variant": "error",
+                  "title": "{{flag2Title}}",
+                  "description": "{{flag2Sub}}"
+                },
+                "children": [
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "Draft CFO ask",
+                      "variant": "secondary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/sendMessage",
+                            "attributes": {
+                              "content": "{{flag2Msg}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/callout",
+                "attributes": {
+                  "variant": "warning",
+                  "title": "{{flag3Title}}",
+                  "description": "{{flag3Sub}}"
+                },
+                "children": [
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "Nudge signer",
+                      "variant": "secondary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/sendMessage",
+                            "attributes": {
+                              "content": "{{flag3Msg}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/callout",
+                "attributes": {
+                  "variant": "warning",
+                  "title": "{{flag4Title}}",
+                  "description": "{{flag4Sub}}"
+                }
+              }
+            ]
+          },
+          {
+            "definition": "tile/separator"
+          },
+          {
+            "definition": "tile/text",
+            "attributes": {
+              "text": "{{meetingsHeading}}",
+              "variant": "section-title"
+            }
+          },
+          {
+            "definition": "tile/column",
+            "attributes": {
+              "gap": "sm"
+            },
+            "children": [
+              {
+                "definition": "tile/callout",
+                "attributes": {
+                  "variant": "recommended",
+                  "eyebrow": "{{meeting1Time}} · WALK IN ASKING",
+                  "title": "{{meeting1Title}}",
+                  "description": "{{meeting1Ask}}"
+                }
+              },
+              {
+                "definition": "tile/callout",
+                "attributes": {
+                  "variant": "recommended",
+                  "eyebrow": "{{meeting2Time}} · WALK IN ASKING",
+                  "title": "{{meeting2Title}}",
+                  "description": "{{meeting2Ask}}"
+                }
+              },
+              {
+                "definition": "tile/text",
+                "attributes": {
+                  "text": "{{meeting3Line}}",
+                  "variant": "body"
+                }
+              },
+              {
+                "definition": "tile/text",
+                "attributes": {
+                  "text": "{{meeting4Line}}",
+                  "variant": "body"
+                }
+              }
+            ]
+          },
+          {
+            "definition": "tile/separator"
+          },
+          {
+            "definition": "tile/text",
+            "attributes": {
+              "text": "{{oweHeading}}",
+              "variant": "section-title"
+            }
+          },
+          {
+            "definition": "tile/column",
+            "attributes": {
+              "gap": "sm"
+            },
+            "children": [
+              {
+                "definition": "tile/callout",
+                "attributes": {
+                  "title": "{{owe1Title}}",
+                  "description": "{{owe1Meta}}"
+                },
+                "children": [
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "Draft email",
+                      "variant": "secondary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/sendMessage",
+                            "attributes": {
+                              "content": "{{owe1Msg}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/callout",
+                "attributes": {
+                  "title": "{{owe2Title}}",
+                  "description": "{{owe2Meta}}"
+                },
+                "children": [
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "Draft CFO ask",
+                      "variant": "secondary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/sendMessage",
+                            "attributes": {
+                              "content": "{{owe2Msg}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/text",
+                "attributes": {
+                  "text": "{{inboxClear}}",
+                  "variant": "caption",
+                  "color": "muted"
+                }
+              }
+            ]
+          },
+          {
+            "definition": "tile/separator"
+          },
+          {
+            "definition": "tile/accordion",
+            "children": [
+              {
+                "definition": "tile/accordionItem",
+                "attributes": {
+                  "title": "Opportunities",
+                  "subtitle": "{{oppsSummary}}",
+                  "iconName": "briefcase",
+                  "isExpanded": true
+                },
+                "children": [
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{closingLabel}}",
+                      "variant": "body",
+                      "weight": "semibold"
+                    }
+                  },
+                  {
+                    "definition": "tile/datagrid",
+                    "attributes": {
+                      "appearance": "striped",
+                      "size": "sm",
+                      "columns": "{{gridColumns}}",
+                      "rows": "{{closingRows}}"
+                    }
+                  },
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{pastDueLabel}}",
+                      "variant": "body",
+                      "weight": "semibold"
+                    }
+                  },
+                  {
+                    "definition": "tile/datagrid",
+                    "attributes": {
+                      "appearance": "striped",
+                      "size": "sm",
+                      "columns": "{{gridColumns}}",
+                      "rows": "{{pastDueRows}}"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+
+## 6. Text — FALLBACK ONLY — DO NOT USE IF `display_widget` SUCCEEDED
 
 ```
 # Daily Briefing — [Date]
@@ -128,23 +586,11 @@ Assemble the briefing as Markdown. This is the deliverable in any host. Omit any
   → Walk in asking: [the one thing]
 …
 
-## Closing in 14 Days ([count] opps, [sum displayValue][ · showing [rows] of [count]])
+## Closing in 14 Days ([N] opps, $[total])
 - **[Account]** — [Stage] $[Amount] closes [Date] · Next: [NextStep or "⚠ BLANK"] · Last activity: [N]d[ "⚠ 7+d stale"]
-…
-
-## Past Due ([count] opps, [sum displayValue][ · showing [rows] of [count]])
-- **[Account]** — [Stage] $[Amount] closed [Date] ([N]d past) · Next: [NextStep or "⚠ BLANK"]
 …
 
 ## Inbox ([N] unread from customers)
 - [Sender] @ [Account] — "[Subject]" (opp $[Amount])
 …  Run `inbox-sweep` to triage and draft replies.
 ```
-
-Lead with the single highest-priority move for the day (the meeting or deal that most needs attention) as a one-line callout above the sections.
-
-Section `[count]` and `[sum displayValue]` come from the 2b-total / 2c-total aggregate reads (see the totals rule in step 2). Add "showing [rows] of [count]" only when the aggregate count is larger than the number of rows listed.
-
-## 6. Rich visualization (host-specific — optional)
-
-If the host provides a rich rendering surface (for example, Amazon Quick dashboards or Apps in Quick), a visual briefing layout may be rendered **in addition to** the Markdown above. That layout is not part of the portable skill: see the plugin's host-extension directory (`com.salesforce.quick/ui`) for the Quick rendering guidance and templates. When no rich surface is available, the Markdown in Step 5 is the whole deliverable.

@@ -1,3 +1,9 @@
+# Proposed Quick workflow prompt matrix
+
+This matrix covers the 31 end-user workflow skills. It intentionally excludes the three utility
+skills: `configure`, `update`, and `using-display-widget`. Expected results are proposed host-run
+contracts, not evidence that Quick has installed, routed, or rendered the plugin.
+
 | Skill | Prompt | Expected Result |
 |---|---|---|
 | `account-context` | `Tell me about the Ravelin Rail Logistics account.` | A Salesforce account brief with Ravelin’s open and closed opportunities. |

@@ -624,4 +624,3 @@ Two blocks below: first the **variable contract** (`renderer.props.schema.json`)
 - [ ] Meter `max` > `target`, "Make" band spans `[quota, max]`
 - [ ] Risky rows carry a leading `status` object; low-risk rows carry neither
 - [ ] Text produced only when `display_widget` is unavailable (terminal fallback)
-

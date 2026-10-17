@@ -16,31 +16,26 @@ Failing to try first — asking the user to connect, or surfacing a "not connect
 - **Show human labels, never API/field literals.** In anything the user sees, print each field's grounded `label` (for example, "Deal Risk", not `Deal_Risk__c`) and record Names, never raw Ids or `__c` API names.
 - **Empty `MINE` scope → fail fast, then ask which scope.** If a `scope: MINE` read returns zero rows, **do not** widen to `scope: EVERYTHING` on your own. Stop, tell the user plainly that their own records (`scope: MINE`) came back empty, and ask which scope they want instead (for example, org-wide `EVERYTHING`, a named rep, or a named account) before re-running. Never invent records, and never silently fall back to org-wide.
 - **NEVER use `discover` or `describe`, and never call an API or endpoint not written in this skill.** Every Salesforce URL you need is in the skill. Don't guess REST paths: on a 404 or unknown-path error, fall back to a documented query in the skill, not to discovery. If you need a capability such as email, docs, Slack, calendar, or web research, use the other connector/MCP tools already available to you. Endpoint guessing and discovery add needless round-trips. Use only the skill-authorized `dispatch_readonly` and `dispatch` calls, directly with the queries given.
-> **Portability note.** Written for the Agent Plugins standard. This is an **email-only**
-> workflow — it uses **no Salesforce access at all**. It reads the user's sent mail (its
-> INPUT) via the host's email connector to build a writing-style profile, and produces a
-> pasteable deliverable. It is **read-only**: it neither sends anything nor writes to any
-> system. It requires an email connector for its input; map that onto the host's email tool
-> (Quick connectors, or MCP tools on other clients).
 <!-- /global-rules-bootstrap -->
+
 
 # Voice Profile
 
-Extract your real writing patterns from sent email → a pasteable Voice & Messaging profile (draft-outreach and inbox-sweep reuse it). **Read-only:** no Salesforce access; reads sent mail only, and neither sends nor writes anything. One-time setup.
+Extract your real writing patterns from sent email → a pasteable Voice & Messaging profile (draft-outreach and inbox-sweep reuse it). No Salesforce. One-time setup.
 
 ## 0. Email available? (hard gate)
 
 No email connected / can't read sent mail → exit gracefully, exactly:
 
 ```
-To build your voice profile, I need access to your email sent folder. Please connect email and re-run this skill.
+To build your voice profile, I need access to your email sent folder. Please connect email via /mcp and re-run this skill.
 ```
 
 Do NOT attempt workarounds, ask clarifying questions, or invent a profile. Just stop.
 
 ## 1. Pull + clean
 
-Read the sent folder: last 60 messages to **external** recipients (not your own domain). Dedupe by thread (keep the opener over replies). Strip quoted/forwarded text, signature blocks (repeated trailing lines), calendar boilerplate.
+Search sent folder: last 60 messages to **external** recipients (not your own domain). Dedupe by thread (keep the opener over replies). Strip quoted/forwarded text, signature blocks (repeated trailing lines), calendar boilerplate.
 
 ## 2. Analyze the cleaned set
 
@@ -52,7 +47,7 @@ Read the sent folder: last 60 messages to **external** recipients (not your own 
 - **Phrases you use** — recurring non-generic 3–5 word phrases
 - **What you don't do** — notable absences (no "hope this finds you well", no emoji, etc.)
 
-## 3. Output — the voice profile + 2 anchors (primary, portable)
+## 3. Output — the profile + 2 anchors
 
 ```
 # Voice Profile — built from <N> sent emails
@@ -70,10 +65,6 @@ Read the sent folder: last 60 messages to **external** recipients (not your own 
 ## Anchor examples
 **Opener:** > <excerpt from a real sent email>
 **Reply:** > <excerpt>
+
+Look right? If you'd like, paste this into your own Claude instructions so draft-outreach and inbox-sweep can reuse your voice.
 ```
-
-Every pattern and excerpt traces to a real sent email — invent nothing. Look right? If you'd like, paste this into your own agent instructions so draft-outreach and inbox-sweep can reuse your voice.
-
-## 4. Rich visualization (host-specific — optional)
-
-If the host provides a rich rendering surface (e.g. Amazon Quick dashboards or Apps in Quick), the profile summary may be rendered **in addition to** the Markdown above. That layout is not part of the portable skill — see `com.salesforce.quick/ui`. When no rich surface is available, the Markdown in Step 3 is the whole deliverable.

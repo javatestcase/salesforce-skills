@@ -1,0 +1,99 @@
+{
+  "scenario": "ravelin-rail-logistics-2026-q3",
+  "asOf": "2026-07-24",
+  "weekStart": "2026-07-20",
+  "instanceUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com",
+  "account": {
+    "id": "001bm00000Wn1XLAAZ",
+    "name": "Ravelin Rail Logistics",
+    "industry": "Transportation and Logistics",
+    "employees": 8400,
+    "annualRevenue": 2100000000,
+    "owner": "Bill Tarr",
+    "location": "Chicago, IL",
+    "liveArr": 1800000,
+    "healthScore": 58,
+    "healthChange": -14,
+    "renewalDays": 63
+  },
+  "contacts": [
+    {
+      "name": "Elena Marquez",
+      "title": "Chief Financial Officer",
+      "role": "Economic buyer",
+      "stance": "Champion"
+    },
+    {
+      "name": "Nikhil Rao",
+      "title": "Chief Information Officer",
+      "role": "Security approver",
+      "stance": "Detractor"
+    },
+    {
+      "name": "Avery Ravelin",
+      "title": "Director of Facilities",
+      "role": "Operational champion",
+      "stance": "Supporter"
+    },
+    {
+      "name": "Marcus Bell",
+      "title": "Chief Operating Officer",
+      "role": "Executive sponsor",
+      "stance": "Neutral"
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "006bm00000Wn1XLAAZ",
+      "name": "Ravelin Network Modernization",
+      "amount": 1800000,
+      "stage": "Negotiation",
+      "closeDate": "2026-07-30",
+      "nextStep": "Resolve redlines and name the security owner",
+      "status": "At risk"
+    },
+    {
+      "id": "006bm00000Wn1XMAAZ",
+      "name": "Renewal Backup Power",
+      "amount": 38000,
+      "stage": "Proposal/Price Quote",
+      "closeDate": "2026-10-20",
+      "nextStep": "Confirm technical deep-dive date",
+      "status": "At risk"
+    },
+    {
+      "id": "006bm00000Wn1XNAAZ",
+      "name": "Yard Operations Analytics",
+      "amount": 650000,
+      "stage": "Discovery",
+      "closeDate": "2026-12-18",
+      "nextStep": "Champion introduction to Yard Operations",
+      "status": "Expansion"
+    }
+  ],
+  "portfolio": [
+    {"account": "Northstar Intermodal", "opportunity": "Dispatch Expansion", "amount": 900000, "owner": "Priya Nair"},
+    {"account": "Harborline Cargo", "opportunity": "Terminal Optimization", "amount": 700000, "owner": "Marcus Lee"},
+    {"account": "Calder Freight Systems", "opportunity": "Yard Visibility Pilot", "amount": 600000, "owner": "Dana Ruiz"},
+    {"account": "Juniper Yard Automation", "opportunity": "Analytics Renewal", "amount": 400000, "owner": "Bill Tarr"}
+  ],
+  "team": [
+    {"name": "Bill Tarr", "plan": 2000000, "closed": 820000, "commit": 1100000},
+    {"name": "Priya Nair", "plan": 2000000, "closed": 1180000, "commit": 500000},
+    {"name": "Marcus Lee", "plan": 2000000, "closed": 1220000, "commit": 420000}
+  ],
+  "lead": {
+    "name": "Elena Marquez",
+    "company": "Ravelin Rail Logistics",
+    "source": "Inbound demo",
+    "score": 94,
+    "request": "Network analytics pricing"
+  },
+  "signals": {
+    "modernizationBudget": 320000000,
+    "weeklyUsers": [612, 590, 556, 521, 477, 438],
+    "securityReview": "Open",
+    "redlines": "Open",
+    "customerActivitiesThisWeek": 29
+  }
+}

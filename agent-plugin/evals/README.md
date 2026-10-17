@@ -16,7 +16,9 @@ capture a run, score it against a small set of checks, and compare over time. An
 
 ## What we measure (four goal types)
 
-Every skill's `eval.yaml` is organized around these axes:
+The 31 workflow `eval.yaml` files are organized around these axes. The utility skills
+`configure`, `update`, and `using-display-widget` are part of the 34-skill mirror but do not
+have workflow eval specs.
 
 | Goal | Question | Where it lives |
 |---|---|---|
@@ -49,9 +51,6 @@ Checks (BLOCKER fails the build; WARNING is reported):
 - **BLOCKER** — frontmatter `name` present, matches the Agent Skills name rule, ≤ 64 chars,
   and equals the directory name.
 - **BLOCKER** — frontmatter `description` present.
-- **BLOCKER** — no forbidden tokens in the body: `display_widget`, `dispatch(`, `discover(`,
-  `describe(` (the Claude widget, the Headless 360 write tool, and its discovery tools).
-  Reads through `dispatch_readonly(` are allowed.
 - **BLOCKER** — every Salesforce call parses: each `dispatch_readonly` call's `queryInput`
   decodes to `{"query": "..."}` and the query's `()`, `[]`, `{}` balance and nest correctly
   (string literals ignored); SOQL `q` parentheses balance. The failure names the line. Added
@@ -87,8 +86,9 @@ python3 evals/run_reads.py --org genwatt-demo --json     # machine-readable
   and use standard fields so they run without org-specific custom grounding. Files named
   `ground-*.graphql` are treated as metadata grounding (no row expectation).
 
-Verified run against `genwatt-demo`: all fixtures for `daily-briefing`, `call-prep`, and
-`draft-outreach` returned valid data (e.g. closing-soon 13 rows, past-due 40 rows).
+Verified current run against `genwatt-demo`: every checked fixture reached the synthetic org
+and returned valid data. This remains a fixture-connectivity test; it does not prove agent
+routing or final-output quality.
 
 #### Built now: the skills' own calls (`e2e_calls.py`)
 
@@ -109,11 +109,28 @@ python3 evals/e2e_calls.py --list                                  # placeholder
   are reported as `GAP`.
 - It first checks that the server rejects a POST, a non-query endpoint, a GraphQL mutation, and
   non-SELECT SOQL. Read-only throughout.
-- Last run on `genwatt-demo` (after the upstream 1.0.0-beta.2.3 merge): 148 of 148 calls ok.
-  It found two bugs that are also present upstream:
-  - `forecast-narrative` `CreatedDate`: a date filled into a date-time filter.
-  - `weekly-wrap`: 12 roots in one GraphQL request, above the 10-subquery limit. We split it
-    into two dispatches.
+- Current run on `genwatt-demo`: **155 of 155 calls passed**, with no failures or unfilled
+  placeholders. All four read-only guards passed. The active mirror carries three approved
+  upstream fixes:
+  - `lead-triage`: User and Group owner fragments ([#9](https://github.com/salesforce/salesforce-skills/issues/9)).
+  - `forecast-narrative`: DateTime field-history boundary ([#15](https://github.com/salesforce/salesforce-skills/issues/15)).
+  - `weekly-wrap`: two requests instead of one 12-root request ([#16](https://github.com/salesforce/salesforce-skills/issues/16)).
+
+#### MCP Apps protocol, hosted contracts, and browser compatibility
+
+`mcp_apps/` validates the widget-first `display_widget` path retained by the active skills:
+
+- 26/26 active widget blocks match upstream.
+- 26/26 hosted Headless 360 calls return the submitted widget in structured content and
+  Salesforce UI metadata.
+- 26/26 meaningful Ravelin widgets pass a compatible cross-origin Chrome host, including
+  130/130 explicit semantic checks and 59/59 capture-only actions (39 messages, 20 links).
+
+The browser action host never sends a message, opens a URL, or writes Salesforce data. The
+official basic host and MCP Inspector retrieve the populated App result but currently stall
+this Salesforce renderer in their opaque-origin sandbox path; the positive gate uses separate
+host/renderer origins with `allow-same-origin`. This proves compatible-host behavior, not Quick
+support. See [`mcp_apps/README.md`](mcp_apps/README.md).
 
 #### Not built here: agent-host evals (needs Quick/Claude runtime)
 
@@ -136,11 +153,11 @@ host-run contract and are executed where an agent + org are both available:
 An AWS-native option for the host-run tiers is Strands Evals + Bedrock AgentCore (linked
 above), which fits the Amazon Quick target.
 
-#### Email-path eval (`email_eval` — runs in Quick)
+#### Planned email-path eval (`email_eval` — requires a Quick host run)
 
-Draft/send skills (`draft-outreach`, and once converted `call-follow-up`, `inbox-sweep`)
-carry an `email_eval` block in their `eval.yaml`. The email connector lives in **Quick**,
-so this tier runs there, not in `run_reads.py`. Its rules:
+The draft/send workflow specs (`draft-outreach`, `call-follow-up`, and `inbox-sweep`) carry an
+`email_eval` contract. It has not been executed in Quick in this repository. When a Quick email
+connector is available, the intended rules are:
 
 - **Connector-gated.** If no email connector is available, the email checks report
   **SKIPPED**, not FAIL (the connector is optional; the skill must degrade to returning the
@@ -153,9 +170,9 @@ so this tier runs there, not in `run_reads.py`. Its rules:
   allowlist, or to addresses pulled from CRM data, fail the eval. This keeps the never-
   auto-send safety contract intact even when the send path is under test.
 
-In short: running these evals in Quick exercises the email path for real, but a genuine
-outbound send only happens as a deliberate, approved, allowlisted step — never as an
-unattended eval action.
+In short: this contract is designed to exercise the email path in Quick, but no Quick run has
+been verified here. A genuine outbound send remains a deliberate, approved, allowlisted step—
+never an unattended eval action.
 
 ### LLM judge (`judge.py`, `generate.py`)
 
@@ -182,19 +199,18 @@ judge marks as belonging to another criterion doesn't count, and the verdict is 
 verified in-scope violation remains. `--samples N` takes a majority vote (ties go to FAIL).
 Exit codes: 0 PASS, 1 FAIL, 2 error.
 
-**How it stays honest.**
+**Historical calibration.** The `daily-briefing` calibration previously scored 7/7 with three
+samples each, but it has not been re-baselined against the current upstream-mirror reset. Do not
+use that historical result as a current release gate until it is rerun. Its design remains:
 - The executor never sees the rubric, and the judge never sees how the output was made.
 - Calibration fixtures in `calibration/<skill>/` pair one correct output with bad outputs that
   each plant exactly one defect class. `expected.json` says which criteria must FAIL and which
   must PASS, so a judge that fails the wrong criterion (scope bleed) is caught too. The
   `daily-briefing` set (good, bad-fabrication, bad-blank, bad-labels, bad-totals,
   good-truncated, bad-rowsum) scores 7/7 with 3 samples each, unanimous on every criterion.
-- Models are unreliable at adding long columns. Early on the judge passed a live briefing
-  whose 13-row total was off by $57,000. That's why the computed facts exist, and why
-  `bad-totals` is in the calibration set. The skill itself now gets totals from Salesforce
-  aggregate reads (see `CONVERSION_RECIPE.md`), and the computed facts include those aggregate
-  values, so a total that matches Salesforce passes even when it exceeds the visible rows
-  (`good-truncated`) and a total summed from visible rows fails (`bad-rowsum`).
+- Models are unreliable at adding long columns. Early testing found a live briefing total off
+  by $57,000. Code-computed facts and aggregate fixtures exist to catch that class of error;
+  their applicability must be confirmed when the judge calibration is re-baselined.
 
 **Credentials and data flow.** Defaults: AWS profile `agentforce-demo`, region `us-east-1`,
 model `us.anthropic.claude-sonnet-4-5-20250929-v1:0`. Override with `--profile/--model/--region`
@@ -213,8 +229,9 @@ live briefing has no meetings section). Aggregate reads (`reads/*-total.graphql`
 
 ## `eval.yaml` schema
 
-One `eval.yaml` per skill at `evals/skills/<name>/eval.yaml`. Layer A reads only `posture`;
-the rest is the Layer B contract.
+There are 31 workflow specs under `evals/skills/<name>/eval.yaml`. Layer A reads only
+`posture`; the rest is the Layer B contract. The three utility skills (`configure`, `update`,
+`using-display-widget`) intentionally have no workflow spec.
 
 **Eval files never go in the skill folder.** Everything under `skills/<name>/` ships with the
 skill when it's installed, and the Agent Plugins spec has no ignore file. So the harness keeps
@@ -264,7 +281,7 @@ efficiency:
 
 ## Adding an eval for a new skill
 
-1. Convert the skill per `../CONVERSION_RECIPE.md`.
+1. Mirror the upstream skill per `../CONVERSION_RECIPE.md`; do not rewrite or remove its widget.
 2. Add `evals/skills/<name>/eval.yaml`, at minimum a correct `posture` (so Layer A can enforce
    consent) plus `should_trigger` and a short `rubric`.
 3. Run `python3 evals/validate.py <name>` until it's clean.

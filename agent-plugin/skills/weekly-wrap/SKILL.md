@@ -11,22 +11,19 @@ Failing to try first — asking the user to connect, or surfacing a "not connect
 
 - **Execute silently between tool calls.** Do not output planning, progress, transition, waiting, or tool-result narration between calls. Execute tool calls silently and proceed directly to the next call. Parallelize independent tasks by batching tool calls into one turn whenever possible. Before the final output, speak only when the skill explicitly requires user input, approval, an exact notice, or material error/blocked reporting. Do not invent checkpoints.
 - **Keep the final output concise.** Return only the requested result or deliverable. Omit process recaps, tool-call details, redundant preambles or conclusions, and data already shown in a widget.
+- **⛔ WIDGET OUTPUT ONLY after data assembly.** Once all queries return, immediately call `display_widget` — at most a single one-line render-wait notice before it, and no summaries, transitions, or narration. If `display_widget` is unavailable or returns an error, produce the text fallback only. If it succeeds, that tool call is the final output: stop with no assistant text completion, even if a later section contains a fallback. The exceptions above do not apply after success.
 - **Ground dynamic or custom relationship and field names before relying on them.** Fixed standard fields that this skill explicitly marks as requiring no grounding need no extra grounding call. On a name error, use the skill's documented grounding path when present; otherwise report the error instead of guessing or re-firing the same shape.
 - **Cite every value exactly as queried**; never fabricate; distinguish a blank value from a value that was not queried. Link each Salesforce record inline: `https://[instanceUrl]/lightning/r/[SObjectType]/[Id]/view`.
 - **Show human labels, never API/field literals.** In anything the user sees, print each field's grounded `label` (for example, "Deal Risk", not `Deal_Risk__c`) and record Names, never raw Ids or `__c` API names.
 - **Empty `MINE` scope → fail fast, then ask which scope.** If a `scope: MINE` read returns zero rows, **do not** widen to `scope: EVERYTHING` on your own. Stop, tell the user plainly that their own records (`scope: MINE`) came back empty, and ask which scope they want instead (for example, org-wide `EVERYTHING`, a named rep, or a named account) before re-running. Never invent records, and never silently fall back to org-wide.
 - **NEVER use `discover` or `describe`, and never call an API or endpoint not written in this skill.** Every Salesforce URL you need is in the skill. Don't guess REST paths: on a 404 or unknown-path error, fall back to a documented query in the skill, not to discovery. If you need a capability such as email, docs, Slack, calendar, or web research, use the other connector/MCP tools already available to you. Endpoint guessing and discovery add needless round-trips. Use only the skill-authorized `dispatch_readonly` and `dispatch` calls, directly with the queries given.
-> **Portability note.** Written for the Agent Plugins standard. Salesforce access is **read-
-> only** (via Headless 360 `dispatch_readonly`). This skill recaps a week; it never writes to
-> Salesforce and never sends anything. If the user asks to "post to Slack," it formats the
-> recap for Slack and creates a **draft** the user reviews and posts — it never auto-posts. On
-> a host whose Salesforce connector has a different read tool (for example, Amazon Quick),
-> send the same `url` and query through that tool.
 <!-- /global-rules-bootstrap -->
+# Rules:
+
 
 # Weekly Wrap
 
-Ground → resolve scope (team only) → (TWO wide SFDC reads + email/doc evidence, ALL in ONE turn) → assemble + flag → output. **Read-only:** never writes to Salesforce; any Slack post is a draft the user posts. Dispatches serialize — the whole point here is a couple of wide reads beat many narrow ones.
+Ground → resolve scope (team only) → (ONE combined SFDC read + email/doc evidence, ALL in ONE turn) → assemble + flag → output. Dispatches serialize — the whole point here is one wide read beats several narrow ones.
 
 ## 1. Ground (hardcoded — Opportunity only)
 
@@ -51,13 +48,14 @@ Note any scalar `__c` fields worth surfacing (close/loss reason, stage-context n
 
 ## 2. Read — pipeline movement + calendar in TWO dispatches; evidence in the SAME turn
 
-**Why two:** a GraphQL request allows at most 10 subqueries ([Salesforce GraphQL query limits](https://developer.salesforce.com/docs/platform/graphql/guide/query-limits.html)). Six detail roots plus six aggregate roots in one request fails with `ExecutionAborted: The number of data fetchers in the query is 12, exceed the data fetcher limitation 10` (verified v60.0–v68.0). Fire the detail read and the aggregate read below as two dispatches in the same turn. Don't merge them back into one request.
+**Why two:** a GraphQL request allows at most 10 subqueries ([Salesforce GraphQL query limits](https://developer.salesforce.com/docs/platform/graphql/guide/query-limits.html)). Six detail roots plus six aggregate roots in one request fails with `ExecutionAborted: The number of data fetchers in the query is 12, exceed the data fetcher limitation 10` (verified v60.0–v68.0). Fire the detail read and the aggregate read below as two `dispatch_readonly` GET GraphQL calls in the same parallel tool turn. Don't merge them back into one request.
 
 **Detail read, six aliased roots:** closed, new, touched (moved), and closing-next-week Opportunities, plus this-week and next-week meetings. No `OpportunityHistory` read: `LastModifiedDate` on still-open opps is the movement signal, so there's no second object to ground or query. Insert `<OPP_CUSTOM>` = confirmed scalar `__c { value }` fields from step 1.
 
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { closedThisWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: true }, CloseDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } newThisWeek: Opportunity(scope: MINE, where: { CreatedDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CreatedDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } touchedThisWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, LastModifiedDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } LastModifiedDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } closingNextWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { eq: { literal: NEXT_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } meetingsThisWeek: Event(scope: MINE, where: { ActivityDate: { eq: { literal: THIS_WEEK } } }, orderBy: { StartDateTime: { order: ASC } }, first: 50) { edges { node { Id Subject { value } StartDateTime { value } Location { value } WhatId { value } } } } meetingsNextWeek: Event(scope: MINE, where: { ActivityDate: { eq: { literal: NEXT_WEEK } } }, orderBy: { StartDateTime: { order: ASC } }, first: 50) { edges { node { Id Subject { value } StartDateTime { value } Location { value } WhatId { value } } } } } } }\"}" })
+
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { aggregate { closedAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: true }, CloseDate: { eq: { literal: THIS_WEEK } } }, groupBy: { IsWon: { group: true } }) { edges { node { aggregate { IsWon { value } Id { count { value } } Amount { sum { value } } } } } } newAgg: Opportunity(scope: MINE, where: { CreatedDate: { eq: { literal: THIS_WEEK } } }) { edges { node { aggregate { Id { count { value } } Amount { sum { value } } } } } } touchedAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, LastModifiedDate: { eq: { literal: THIS_WEEK } } }, groupBy: { StageName: { group: true } }) { edges { node { aggregate { StageName { value } Id { count { value } } Amount { sum { value } } } } } } closingAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { eq: { literal: NEXT_WEEK } } }) { edges { node { aggregate { Id { count { value } } Amount { sum { value } } } } } } meetingsThisWeekAgg: Event(scope: MINE, where: { ActivityDate: { eq: { literal: THIS_WEEK } } }) { edges { node { aggregate { Id { count { value } } } } } } meetingsNextWeekAgg: Event(scope: MINE, where: { ActivityDate: { eq: { literal: NEXT_WEEK } } }) { edges { node { aggregate { Id { count { value } } } } } } } } }\"}" })
 ```
@@ -91,7 +89,219 @@ If an aggregate root's `count` exceeds 50, label its paired detail root's rows "
 - **Activity** — meeting count from the `meetingsThisWeekAgg` root's `count` (eyeball `meetingsThisWeek` Subject/Location for internal-only noise, e.g. standups, and don't count those as customer activity — but the aggregate itself still reflects the raw total), plus the email thread count from evidence.
 - **Monday** — meeting count from the `meetingsNextWeekAgg` root's `count`, detail from `meetingsNextWeek` (time, subject, account if `WhatId` resolves); closing-next-week count and $ from the `closingAgg` root (`count`/`sum`), detail from `closingNextWeek` opps; plus any `NextStep` text already in hand that names a date next week (scan, don't re-query).
 
-## 4. Output — weekly recap (primary, portable)
+## 4. Output — widget FIRST (the rendered UI is the default)
+
+Call `display_widget` now with the data you collected. Do not write markdown first — call immediately. Only fall back to markdown if the tool is unavailable.
+
+When the data is assembled, call `display_widget`; a single one-line "Displaying the visualization now (this may take a minute)." notice may precede it.
+
+### Self-verification (before calling display_widget)
+
+- [ ] `widgetDefinition` is passed as a native JSON object — not a quoted string, not a code block pasted as text. If the value starts with `"{"`, it is wrong.
+
+The widget template is embedded below. Call `display_widget` in **dynamic** mode with it. It is a skeleton: replace every `{{token}}` placeholder with a fully-resolved literal computed from the week's data — this echo path does no expression compilation, so no `{!…}` bindings.
+
+```json
+{
+  "renderer": {
+    "componentOverrides": {
+      "$": {
+        "type": "mosaic",
+        "definition": "tile/widget",
+        "children": [
+          {
+            "definition": "tile/row",
+            "attributes": {
+              "gap": "sm",
+              "align": "center",
+              "isWrapped": false
+            },
+            "children": [
+              {
+                "definition": "tile/icon",
+                "attributes": {
+                  "name": "calendar",
+                  "size": "xl",
+                  "alt": ""
+                }
+              },
+              {
+                "definition": "tile/text",
+                "attributes": {
+                  "text": "{{title}}",
+                  "variant": "h1"
+                }
+              }
+            ]
+          },
+          {
+            "definition": "tile/text",
+            "attributes": {
+              "text": "{{subtitle}}",
+              "variant": "caption",
+              "color": "muted"
+            }
+          },
+          {
+            "definition": "tile/separator"
+          },
+          {
+            "definition": "tile/column",
+            "attributes": {
+              "width": "md"
+            },
+            "children": [
+              {
+                "definition": "tile/chart",
+                "attributes": {
+                  "chartType": "column",
+                  "caption": "{{activityCaption}}",
+                  "categories": "{{activityCategories}}",
+                  "series": "{{activitySeries}}",
+                  "valueFormat": "number",
+                  "showLegend": true
+                }
+              },
+              {
+                "definition": "tile/waterfall",
+                "attributes": {
+                  "caption": "{{waterfallCaption}}",
+                  "valueFormat": "currency",
+                  "size": "lg",
+                  "start": "{{waterfallStart}}",
+                  "steps": "{{waterfallSteps}}",
+                  "end": "{{waterfallEnd}}"
+                }
+              }
+            ]
+          },
+          {
+            "definition": "tile/datagrid",
+            "attributes": {
+              "caption": "{{datagridCaption}}",
+              "appearance": "striped",
+              "size": "sm",
+              "columns": [
+                {
+                  "key": "status",
+                  "header": "Status",
+                  "type": "badge"
+                },
+                {
+                  "key": "deal",
+                  "header": "Deal",
+                  "type": "text"
+                },
+                {
+                  "key": "amount",
+                  "header": "Amount",
+                  "type": "currency",
+                  "align": "right"
+                },
+                {
+                  "key": "event",
+                  "header": "What happened",
+                  "type": "badge"
+                },
+                {
+                  "key": "note",
+                  "header": "Note",
+                  "type": "text"
+                }
+              ],
+              "rows": "{{dealRows}}"
+            }
+          },
+          {
+            "definition": "tile/callout",
+            "attributes": {
+              "variant": "success",
+              "title": "{{calloutTitle}}",
+              "description": "{{calloutDescription}}"
+            },
+            "children": [
+              {
+                "definition": "tile/row",
+                "attributes": {
+                  "gap": "sm",
+                  "align": "center",
+                  "isWrapped": true
+                },
+                "children": [
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "{{button1Label}}",
+                      "variant": "primary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/sendMessage",
+                            "attributes": {
+                              "content": "{{button1Content}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "{{button2Label}}",
+                      "variant": "secondary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/sendMessage",
+                            "attributes": {
+                              "content": "{{button2Content}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+What each block shows, from data you already have:
+
+- **Header** — an icon (calendar), page-title text (`{{title}}`, e.g. "Weekly wrap — week of Jul 20"), and a one-line caption subhead (`{{subtitle}}`) summarizing closed $, won/lost counts, pipeline added, and activity count, with a separator.
+- **Two graphs in a wrapped row**:
+  - **Column chart** — "Daily activity — calls, emails, and meetings" (`{{activityCaption}}`): `{{activityCategories}}` (weekdays), `{{activitySeries}}` (3 series: Calls, Emails, Meetings with daily counts), `valueFormat:"number"`, with legend.
+  - **Waterfall** — "How commit moved this week" (`{{waterfallCaption}}`): `{{waterfallStart}}` (Last Mon value), `{{waterfallSteps}}` (Won/New pipe/Slipped out/Lost deltas), `{{waterfallEnd}}` (This Mon), `valueFormat:"currency"`, size lg.
+- **Datagrid** (`{{dealRows}}`) — "This week's closed and moved deals" (`{{datagridCaption}}`). Columns: Deal (text), Amount (currency, right-aligned), What happened (badge), Note (text). Every row carries a leading `status` object (`{value,badgeVariant}` — value Won/Lost/Slipped, badgeVariant success/error/warning); the leading Status column reads each row's `status`.
+- **One synthesis callout** (`variant:"success"`) — `{{calloutTitle}}` (the week's single most important read) and `{{calloutDescription}}`. It carries two real buttons: "Draft Slack post" (`{{button1Label}}` / `{{button1Content}}`, `action/sendMessage`) and "Prep Monday plan" (`{{button2Label}}` / `{{button2Content}}`, `action/sendMessage`).
+
+**Hydration rules:**
+1. Start from the embedded template above — a valid-JSON widget-definition envelope whose leaf values carry `{{token}}` placeholders.
+2. Resolve every `{{token}}`. A value that is **only** a `{{token}}` (chart `categories`/`series`, waterfall `start`/`steps`/`end`, datagrid `rows`) becomes the resolved **typed** literal — numbers stay numbers, arrays stay arrays. A `{{token}}` **inside** a larger string is interpolated as text.
+3. `{{activitySeries}}` is an array of series objects — each with `name` (string) and `data` (array of numbers). `{{waterfallSteps}}` is an array of step objects — each with `label` (string) and `delta` (number). `{{dealRows}}` is an array of deal objects — each with `deal` (plain string — format as the account or opportunity name (e.g. "Vertex Manufacturing"); names must be plain strings, not objects: use `Account.Name.value` from the SF response), `amount` (number), `event` (`{ value, badgeVariant }`), `note` (text), and `status` (`{value,badgeVariant}` — value Won/Lost/Slipped, badgeVariant success/error/warning).
+4. The result is hydrated widget definition (no `{{…}}` placeholders remain). Then call:
+
+```
+display_widget({ resourceType: "dynamic", widgetDefinition: <hydrated renderer.json> })
+```
+
+**Binding rules:**
+- Resolve every `{{token}}` to a literal before calling — numbers stay numbers (`{{waterfallStart}}.value`, each step's `delta`, each row's `amount`), arrays stay arrays (`{{activityCategories}}`, `{{activitySeries}}`, `{{waterfallSteps}}`, `{{dealRows}}`), strings stay strings.
+- Chart series: each object has `name` (string) and `data` (array of numbers, one per category). Categories are weekday labels (Mon-Fri).
+- Waterfall: `{{waterfallStart}}` is `{ label, value }`, `{{waterfallSteps}}` is an array of `{ label, delta }` (deltas can be positive or negative), `{{waterfallEnd}}` is `{ label }` (final value is computed).
+- Datagrid rows: one per deal that closed/moved this week. `amount` is a raw number. The What happened badge (`event.badgeVariant`) reflects outcome — `"success"` (Won), `"error"` (Lost), `"warning"` (Slipped). `status` fills the leading Status column. Rank rows by outcome (Won first, Lost second, Slipped last).
+- Callout buttons: both are `action/sendMessage` with first-person `content` prompts (`{{button1Content}}`, `{{button2Content}}`, e.g. "Draft a Slack post for…"). Never leave a button decorative.
+- No fabricated content — quote blank fields as blank rather than inventing them; drop deals you have no data for.
+
+
+## 5. Text — FALLBACK ONLY — DO NOT USE IF `display_widget` SUCCEEDED
 
 ```
 # Week of [Mon date] - [Scope]
@@ -118,8 +328,4 @@ If an aggregate root's `count` exceeds 50, label its paired detail root's rows "
 - NextStep due: [list]
 ```
 
-Link each Salesforce record inline. If the user asks to **"post to Slack,"** format the recap for Slack (bold via asterisks, bullets) and create a **draft** to the team channel from config. The user reviews and posts it — never auto-post.
-
-## 5. Rich visualization (host-specific — optional)
-
-If the host provides a rich rendering surface (e.g. Amazon Quick dashboards or Apps in Quick), an activity chart, commit waterfall, and a closed/moved datagrid may be rendered **in addition to** the Markdown above. That layout is not part of the portable skill — see `com.salesforce.quick/ui`. When no rich surface is available, the Markdown in Step 4 is the whole deliverable.
+If "post to Slack" - format the above for Slack (bold via asterisks, bullets) and create a draft to the team channel from config. User reviews and posts.

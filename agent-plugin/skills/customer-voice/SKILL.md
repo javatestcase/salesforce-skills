@@ -16,15 +16,10 @@ Failing to try first — asking the user to connect, or surfacing a "not connect
 - **Show human labels, never API/field literals.** In anything the user sees, print each field's grounded `label` (for example, "Deal Risk", not `Deal_Risk__c`) and record Names, never raw Ids or `__c` API names.
 - **Empty `MINE` scope → fail fast, then ask which scope.** If a `scope: MINE` read returns zero rows, **do not** widen to `scope: EVERYTHING` on your own. Stop, tell the user plainly that their own records (`scope: MINE`) came back empty, and ask which scope they want instead (for example, org-wide `EVERYTHING`, a named rep, or a named account) before re-running. Never invent records, and never silently fall back to org-wide.
 - **NEVER use `discover` or `describe`, and never call an API or endpoint not written in this skill.** Every Salesforce URL you need is in the skill. Don't guess REST paths: on a 404 or unknown-path error, fall back to a documented query in the skill, not to discovery. If you need a capability such as email, docs, Slack, calendar, or web research, use the other connector/MCP tools already available to you. Endpoint guessing and discovery add needless round-trips. Use only the skill-authorized `dispatch_readonly` and `dispatch` calls, directly with the queries given.
-> **Portability note.** Written for the Agent Plugins standard. Salesforce calls use the
-> Headless 360 MCP tool `dispatch_readonly`, exactly as in the original plugin; this skill is
-> read-only. On a host whose Salesforce connector has a different read tool (for example,
-> Amazon Quick), send the same `url` and query through that tool.
 <!-- /global-rules-bootstrap -->
-
 # Customer Voice
 
-Direct customer quotes on a topic, from transcripts + email threads across your accounts — verbatim with attribution, not summaries. Salesforce only *scopes* the search: which accounts, and who's internal vs. customer. Context (all in ONE turn) → search docs/email → extract quotes → group by theme. **Read-only:** this skill never writes to Salesforce; it only reads to scope the search.
+Direct customer quotes on a topic, from transcripts + email threads across your accounts — verbatim with attribution, not summaries. Salesforce only *scopes* the search: which accounts, and who's internal vs. customer. Context (all in ONE turn) → search docs/email → extract quotes → group by theme.
 
 Inputs: **topic** (theme/objection/feature/competitor, or open-ended "what's coming up"); **scope** (my accounts default / team / named list); **period** (30d default).
 
@@ -35,14 +30,10 @@ These don't depend on each other, so fire them together (with the doc/email sear
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Account(scope: MINE, first: 200) { edges { node { Name { value } Website { value } Owner { Name { value } } } } } } } }\"}" })
-```
 
-```
 dispatch_readonly(method: "GET", url: "/services/data/v66.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { currentUser { Email { value } } } }\"}" })
-```
 
-```
 dispatch_readonly(method: "GET", url: "/services/data/v63.0/query",
   queryParams: { "q": "SELECT Name FROM Organization LIMIT 1" })
 ```
@@ -59,9 +50,7 @@ dispatch_readonly(method: "GET", url: "/services/data/v63.0/query",
 
 Per transcript/thread, pull passages where the **customer** (not your domain/org) speaks on the topic: verbatim quote (1–3 sentences) · speaker name + title + account · date + source · one-line context. Paraphrase is NOT voice-of-customer. Open-ended topic → cluster by theme, return top 3–5 by frequency.
 
-## 4. Output — customer voice digest (primary, portable)
-
-Assemble the digest as Markdown. This is the deliverable in any host. Cite source + date for every quote; quote blank values as blank rather than inventing.
+## 4. Output
 
 ```
 # Customer Voice: "<Topic>" — <N> quotes from <M> accounts (<period>)
@@ -77,9 +66,3 @@ Assemble the digest as Markdown. This is the deliverable in any host. Cite sourc
 - <N> accounts in scope had no transcript/thread in period
 - Topic not mentioned in: <accounts>
 ```
-
-Link each represented account inline (`https://[instanceUrl]/lightning/r/Account/[Id]/view`).
-
-## 5. Rich visualization (host-specific — optional)
-
-If the host provides a rich rendering surface (e.g. Amazon Quick dashboards or Apps in Quick), a themes/quotes visual may be rendered **in addition to** the Markdown above. That layout is not part of the portable skill — see the plugin's host-extension directory (`com.salesforce.quick/ui`). When no rich surface is available, the Markdown in Step 4 is the whole deliverable.

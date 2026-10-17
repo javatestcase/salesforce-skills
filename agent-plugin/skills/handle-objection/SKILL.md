@@ -16,69 +16,40 @@ Failing to try first — asking the user to connect, or surfacing a "not connect
 - **Show human labels, never API/field literals.** In anything the user sees, print each field's grounded `label` (for example, "Deal Risk", not `Deal_Risk__c`) and record Names, never raw Ids or `__c` API names.
 - **Empty `MINE` scope → fail fast, then ask which scope.** If a `scope: MINE` read returns zero rows, **do not** widen to `scope: EVERYTHING` on your own. Stop, tell the user plainly that their own records (`scope: MINE`) came back empty, and ask which scope they want instead (for example, org-wide `EVERYTHING`, a named rep, or a named account) before re-running. Never invent records, and never silently fall back to org-wide.
 - **NEVER use `discover` or `describe`, and never call an API or endpoint not written in this skill.** Every Salesforce URL you need is in the skill. Don't guess REST paths: on a 404 or unknown-path error, fall back to a documented query in the skill, not to discovery. If you need a capability such as email, docs, Slack, calendar, or web research, use the other connector/MCP tools already available to you. Endpoint guessing and discovery add needless round-trips. Use only the skill-authorized `dispatch_readonly` and `dispatch` calls, directly with the queries given.
-> **Portability note.** Written for the Agent Plugins standard. Salesforce calls use the
-> Headless 360 MCP tool `dispatch_readonly`, exactly as in the original plugin; this skill is
-> read-only. On a host whose Salesforce connector has a different read tool (for example,
-> Amazon Quick), send the same `url` and query through that tool.
 <!-- /global-rules-bootstrap -->
+
 
 # Handle Objection
 
-A grounded response, not a script: what the objection means, how deals like it went, and your own customers' evidence that answers it. Inputs: **the objection** (their words / email / transcript) and **the deal** (opp for context). Common objections/competitors/differentiators are external — infer from org data or ask once; never invent. **Read-only:** this skill never writes to Salesforce; if the objection arrived in writing, drafting the reply is handed to `draft-outreach`.
+A grounded response, not a script: what the objection means, how deals like it went, and your own customers' evidence that answers it. Inputs: **the objection** (their words / email / transcript) and **the deal** (opp for context). Common objections/competitors/differentiators are external — infer from org data or ask once; never invent.
 
 ## 1. Classify what's really being said
 
 Map to type: price/value · timing/priority · competitive · risk/trust · authority ("check with…") · status quo. Distinguish an **objection** (reason not to buy) from a **negotiation move** (reason to buy cheaper) — the response differs.
 
-## 2. Pull the deal context (Salesforce read)
+## 2. Pull your own evidence (fire in parallel)
 
-Read the deal for the customer's own stated goals — their pain and metrics are the best rebuttal. `%DEALNAME%` = 1–2 words from the deal name. Standard fields only; no grounding needed:
-
-```
-dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Opportunity(where: { Name: { like: \\\"%DEALNAME%\\\" } }, orderBy: { CloseDate: { order: DESC } }, first: 1) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } Type { value } NextStep { value } Description { value } Account { Name { value } Industry { value } } Owner { Name { value } } OpportunityContactRoles { edges { node { Role { value } IsPrimary { value } Contact { Name { value } Title { value } } } } } } } } } } }\"}" })
-```
-
-Empty `edges` → resolve with a broad selector (`Id Name { value }` only), pick the target, then rerun with `where: { Id: { eq: "<ID>" } }`; never run the full template across multiple matches.
-
-## 3. Pull your own evidence (fire in parallel — same turn as step 2)
-
-Independent of the SF result (they key on the deal/account name and objection type):
 - **Win/loss** (`win-loss-review`): how deals with this objection ended; what wins did differently.
 - **Customer voice** (`customer-voice`): verbatim quotes speaking to this exact concern.
 - **Docs**: case studies, ROI, security/compliance already cleared for external use.
-- **The deal itself**: what this customer already told you (their stated pain/metrics — from step 2's `Description`/contact roles).
+- **The deal itself**: what this customer already told you (their stated pain/metrics are the best rebuttal).
 
-Use whatever email/doc/Slack search tools are available. If none present, skip silently (deal context alone is fine). Cite source + date for anything you use.
-
-## 4. Output — objection response (primary, portable)
-
-Assemble the response as Markdown. This is the deliverable in any host. Cite the source per proof point; quote blank fields as blank rather than inventing.
+## 3. Build the response
 
 ```
 # Objection: "<their words>"
-
 ## What's underneath it
 <1–2 sentences: the real concern; objection vs negotiation>
-
 ## The response
 <talk track in your voice, 3–5 sentences: acknowledge → answer with their own stated goals + one proof point → question that moves it forward>
-
 ## Proof points to have ready
 - <customer quote / case study / metric — with source>
-
 ## If it's <competitor>
 - Where they're strong (be honest) + where this customer's needs don't match it; the trap question that surfaces the difference
-
 ## What history says
 <from win/loss: how often this objection appears in wins vs losses, and what winning reps did next>
-
 ## Don't
 - <the response that historically loses this — overdiscounting, feature-dumping, arguing>
 ```
 
-Link the opportunity inline (`https://[instanceUrl]/lightning/r/Opportunity/[Id]/view`). Objection arrived in writing? Offer to draft the reply via `draft-outreach`.
-
-## 5. Rich visualization (host-specific — optional)
-
-If the host provides a rich rendering surface (e.g. Amazon Quick dashboards or Apps in Quick), a talk-track/proof-point visual may be rendered **in addition to** the Markdown above. That layout is not part of the portable skill — see the plugin's host-extension directory (`com.salesforce.quick/ui`). When no rich surface is available, the Markdown in Step 4 is the whole deliverable.
+Objection arrived in writing? Offer to draft the reply via `draft-outreach`.

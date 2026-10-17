@@ -16,63 +16,38 @@ Failing to try first — asking the user to connect, or surfacing a "not connect
 - **Show human labels, never API/field literals.** In anything the user sees, print each field's grounded `label` (for example, "Deal Risk", not `Deal_Risk__c`) and record Names, never raw Ids or `__c` API names.
 - **Empty `MINE` scope → fail fast, then ask which scope.** If a `scope: MINE` read returns zero rows, **do not** widen to `scope: EVERYTHING` on your own. Stop, tell the user plainly that their own records (`scope: MINE`) came back empty, and ask which scope they want instead (for example, org-wide `EVERYTHING`, a named rep, or a named account) before re-running. Never invent records, and never silently fall back to org-wide.
 - **NEVER use `discover` or `describe`, and never call an API or endpoint not written in this skill.** Every Salesforce URL you need is in the skill. Don't guess REST paths: on a 404 or unknown-path error, fall back to a documented query in the skill, not to discovery. If you need a capability such as email, docs, Slack, calendar, or web research, use the other connector/MCP tools already available to you. Endpoint guessing and discovery add needless round-trips. Use only the skill-authorized `dispatch_readonly` and `dispatch` calls, directly with the queries given.
-> **Portability note.** Written for the Agent Plugins standard. Salesforce calls use the
-> Headless 360 MCP tool `dispatch_readonly`, exactly as in the original plugin; this skill is
-> read-only. On a host whose Salesforce connector has a different read tool (for example,
-> Amazon Quick), send the same `url` and query through that tool.
 <!-- /global-rules-bootstrap -->
+
 
 # Find Internal Answer
 
-Return the internal **source** (not a paraphrase) for a policy / approver / asset / "who knows about…" question. Search where institutional answers live, in authority order. **Read-only:** this skill never writes to Salesforce; it surfaces and cites the source, nothing more.
+Return the internal **source** (not a paraphrase) for a policy / approver / asset / "who knows about…" question. Search where institutional answers live, in authority order.
 
 Input: **the question**. Canonical locations (policy folder, enablement drive, deal-desk channel, pricing approver) are external — ask once for them to go faster.
 
-## 1. Search, in order of authority (stop when answered)
+## Search, in order of authority (stop when answered)
 
 1. **Config-listed canonical sources** first — if the answer's there, stop.
 2. **Docs** — search by topic + likely names; prefer the most-recently-modified version, note when it was last updated.
 3. **Slack** — relevant channels (deal desk, sales, enablement) for prior authoritative threads (flag if possibly stale).
 4. **Email** — prior threads where this was answered for a specific deal.
-5. **Salesforce** — for "who approves" only: who owns or recently worked similar opportunities.
+5. **Salesforce** — for "who approves" only: approval processes, queue owners, or who approved recent similar opps.
 
-Fire the independent searches together where you can. Use whatever docs/Slack/email connectors are available; if none are present, lean on the Salesforce read below and say the other sources weren't reachable.
+Fire the independent searches together where you can.
 
-## 2. Salesforce read — "who approves / who owns" only
-
-For a "who approves this" or "who's handled one of these before" question, read recent similar opportunities and surface their owners as the people to ask. Standard fields only; no grounding needed. Set `%TOPIC%` from the question (e.g. a product or deal type):
-
-```
-dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Opportunity(where: { Name: { like: \\\"%TOPIC%\\\" } }, orderBy: { LastModifiedDate: { order: DESC } }, first: 10) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } LastModifiedDate { value } Owner { Name { value } } Account { Name { value } } } } } } } }\"}" })
-```
-
-Take the owners of the most recent matches as the "who handled this before" answer, and link each opportunity. This is a pointer to a person, not a policy — never present it as the written rule.
-
-## 3. Output — answer with the source (primary, portable)
-
-Assemble the answer as Markdown. This is the deliverable in any host. Return only what the sources actually say.
+## Answer with the source
 
 ```
 # <The question>
-
 ## Answer
 <2–4 sentences — only what the sources actually say>
-
 ## Source
 - [<Doc name>](link) — updated <date> — <owner if known>
 - <Slack thread / email> — <date> — answered by <name>
-- <Salesforce opp + owner, linked> — <date> (for "who handled this" answers)
-
 ## Caveats
 - <if sources conflict or the newest is old — and who could confirm>
-
 ## Who to ask if this isn't current
 - <the person/role the sources point to>
 ```
 
 Nothing authoritative? Say so plainly, list the closest things found, name the person most likely to know — never synthesize a policy that isn't written anywhere.
-
-## 4. Rich visualization (host-specific — optional)
-
-If the host provides a rich rendering surface (e.g. Amazon Quick dashboards or Apps in Quick), a sources-and-answer visual may be rendered **in addition to** the Markdown above. That layout is not part of the portable skill — see the plugin's host-extension directory (`com.salesforce.quick/ui`). When no rich surface is available, the Markdown in Step 3 is the whole deliverable.

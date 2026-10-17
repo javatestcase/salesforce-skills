@@ -1,99 +1,103 @@
-# Setup: connecting the skills to Salesforce and Slack
+# Setup: Salesforce, MCP Apps, and optional connectors
 
-The skills read Salesforce through an MCP server. `mcp.json` declares the same two hosted
-servers as the original Claude plugin (`salesforce-for-sales/.mcp.json`):
+The active package mirrors all 34 upstream skills. Salesforce reads use Headless 360
+`dispatch_readonly`; 26 skills also use `display_widget` for widget-first output and retain a
+text fallback.
 
-| Server | URL | Used for |
+## Declared MCP servers
+
+`mcp.json` declares the same hosted endpoints as the source plugin:
+
+| Server | URL | Purpose |
 |---|---|---|
-| `salesforce-h360` | `https://api.salesforce.com/platform/mcp/v1/platform/headless-360` | all Salesforce reads |
-| `slack` | `https://mcp.slack.com/mcp` | internal context and Slack drafts |
+| `salesforce-h360` | `https://api.salesforce.com/platform/mcp/v1/platform/headless-360` | Salesforce reads and MCP Apps widgets |
+| `slack` | `https://mcp.slack.com/mcp` | Optional internal context and draft Slack content |
 
-Amazon Quick doesn't use `mcp.json`. It connects to Salesforce and Slack through connectors
-set up in the Quick console, so everything below about `mcp.json` applies to clients that load
-a plugin's bundled servers, such as Kiro.
+Whether a client loads bundled `mcp.json` is host-specific. Amazon Quick connector mapping,
+plugin loading, and MCP Apps rendering have not been verified in this repository. Do not treat
+the package declaration as proof of Quick support.
 
-## Keep Headless 360 read-only
+## Headless 360 tools
 
-The original plugin's `.mcp.json` described the server's five tools and marked three to block.
-The Agent Plugins format has no `description` field, so that guidance lives here.
+| Tool | Role in the active skills |
+|---|---|
+| `dispatch_readonly` | Required for the documented Salesforce GraphQL, SOQL, and UI API reads. |
+| `display_widget` | Required for widget-first output on a compatible MCP Apps host. |
+| `discover`, `describe` | Not used by the normal skill workflows; the upstream skill rules tell the agent not to call them. |
+| `dispatch` | General REST tool that can mutate data; no current skill contains an executable `dispatch` call. |
 
-| Tool | What it does | Setting |
-|---|---|---|
-| `discover` | searches Salesforce's APIs for operations | **block** |
-| `describe` | returns the full spec of an operation or object | **block** |
-| `dispatch` | runs any REST call, including creates and updates | **block** |
-| `dispatch_readonly` | runs read-only REST calls (SOQL, UI API, GraphQL) | allow |
-| `display_widget` | renders a Claude/Cowork widget | block (the portable skills don't use it) |
+The static validator does not maintain a substring denylist. Real authorization belongs at the
+Salesforce permission/tool layer and in the client. For a read-only deployment, use least
+privilege and disable tools the deployment does not need. Do **not** disable `display_widget` if
+you expect the upstream widget-first behavior. A client-side read-only policy might disable
+`dispatch` while allowing `dispatch_readonly` and `display_widget`; exact controls depend on the
+client and org policy.
 
-The skills need only `dispatch_readonly`.
+## Skill calls and approved differences
 
-Enforce this in Salesforce, where the model can't get around it: restrict the tools on the
-org's MCP server (step 5 of the original setup below). A client-side block is a second layer:
+GraphQL reads encode the document inside `queryInput`:
 
-- **Kiro, server defined in workspace or user MCP settings:** `disabledTools` on the server
-  entry, e.g. `"disabledTools": ["discover", "describe", "dispatch", "display_widget"]`.
-- **Kiro, server bundled in this Power:** Kiro namespaces it (for example
-  `power-salesforce-for-sales-salesforce-h360`). Kiro's docs don't say whether `disabledTools`
-  or the MCP panel's per-tool Disable apply to a Power's servers. Check at first install.
-- **The skills** also say never to use `discover` or `describe` and to stay read-only. That's
-  an instruction, not a block.
-
-## How the skills call Salesforce
-
-The skills keep the original plugin's Headless 360 calls unchanged, for example:
-
-```
+```text
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { currentUser { Id } } }\"}" })
 ```
 
-GraphQL reads put the query in a JSON string under `queryInput`; SOQL reads use
-`url: "/services/data/v63.0/query"` with `queryParams: { "q": "SELECT ..." }`. Each call keeps
-its API version (some pin `v66.0` or `v63.0`).
+SOQL reads use `/services/data/v63.0/query` and `queryParams: { "q": "SELECT ..." }`.
+Per-call API versions remain as upstream. Only three active skill differences are allowed:
 
-On a host whose Salesforce connector has a different read tool (for example, Amazon Quick),
-the model sends the same `url` and query through that tool. That mapping is untested.
+- [`lead-triage` #9](https://github.com/salesforce/salesforce-skills/issues/9): User and Group
+  owner fragments.
+- [`forecast-narrative` #15](https://github.com/salesforce/salesforce-skills/issues/15): UTC
+  DateTime boundary for field history.
+- [`weekly-wrap` #16](https://github.com/salesforce/salesforce-skills/issues/16): two
+  dispatches instead of one 12-root request.
 
-## Salesforce admin setup
+A host with a differently named Salesforce read connector would need to map the same URL/query
+contract to that connector. That mapping remains unverified for Quick.
 
-From the original plugin's [SETUP.md](../salesforce-for-sales/SETUP.md) and
-[What Is Salesforce in Claude](https://help.salesforce.com/s/articleView?id=sales.what_is_salesforce_in_claude.htm&type=5):
+## MCP Apps renderer compatibility
 
-1. Activate the Salesforce MCP Server in Setup.
-2. Create a permission set for the users who should have access (recommended).
-3. Create and configure the External Client App (ECA) for OAuth.
-4. Connect the client to Salesforce MCP.
-5. Set tool restrictions to keep it read-only (the table above).
+Headless 360 advertises `ui://widget/salesforce-widget-renderer` and returns each submitted
+widget in both `structuredContent.widgetDefinition` and `_meta["salesforce/uiMetadata"]`.
+The live hosted contract suite verifies all 26 active widget definitions.
 
-**Sign-in in Kiro.** The original setup puts the ECA's Consumer Key in the MCP config. A
-`streamable-http` entry in the Agent Plugins format allows only `type`, `url`, and `headers`,
-so there's no place for it here. Salesforce's hosted MCP servers don't support dynamic client
-registration: an admin registers an ECA and the client is configured with its Consumer Key
-(see `docs/agent-plugin-spec.md`, section 7, for sources). So the bundled `salesforce-h360`
-entry can't sign in by itself. Define the server in Kiro's workspace or user MCP settings
-instead, with Kiro's `oauth.clientId` set to the Consumer Key.
+Host sandbox behavior matters:
 
-Kiro supports only public clients (PKCE, no client secret, local redirect). Salesforce supports
-that: in the ECA, keep PKCE required, deselect "Require secret for Web Server Flow", and add
-the `mcp_api` scope. Register the callback as `http://localhost:<port>/...`; an HTTP callback
-on `127.0.0.1` is reported to be rejected. Which exact redirect URI Kiro sends is untested,
-so check it at first sign-in and register that.
+- The official basic host and MCP Inspector retrieve the App and populated result, but their
+  opaque-origin path leaves this Salesforce renderer at `Loading…`.
+- A separate-origin renderer sandbox with `allow-scripts allow-same-origin` completes the
+  handshake and renders. The host and renderer remain isolated because they use different
+  origins.
+- The Ravelin browser suite validates 26/26 widgets and capture-only actions in that compatible
+  configuration.
 
-Until the org is set up, the bundled `salesforce-h360` server fails to connect. Per the spec
-that's a connection failure, not a broken plugin: the skills still load, but can't read
-Salesforce. Disable that server in Kiro's MCP panel while testing with the local server below.
+If a client cannot mount the renderer, the skill must use its upstream text fallback. See
+[`evals/mcp_apps/README.md`](evals/mcp_apps/README.md) for protocol, hosted, browser, and safety
+details.
 
-## Testing locally without Headless 360
+## Salesforce OAuth setup
 
-`evals/local-mcp/salesforce-readonly-mcp` is a small, dependency-free MCP server that runs the
-skills' reads through your `sf` CLI login. It offers one tool, `dispatch_readonly`, with the
-same signature as Headless 360's, so the skills' calls run unchanged. It supports only GET on
-the GraphQL and SOQL query endpoints, rejects GraphQL mutations and non-SELECT SOQL before
-calling Salesforce, and never handles an access token. It's a test tool, not part of the
-shipped plugin.
+Follow the source plugin's [setup guide](../salesforce-for-sales/SETUP.md):
 
-To use it in Kiro, add it to `.kiro/settings/mcp.json` in your workspace (use your own path and
-org alias):
+1. Activate the Salesforce MCP Server.
+2. Create a permission set for intended users.
+3. Create an External Client App (ECA).
+4. Add the `mcp_api` scope and require PKCE.
+5. Connect the client and apply least-privilege tool/record permissions.
+
+The package cannot contain a Consumer Key or secret. A client that does not support dynamic
+registration must be configured separately with the ECA Consumer Key. For Kiro, define the
+server in workspace or user MCP settings and set `oauth.clientId`. Use a public PKCE client and
+register the exact `http://localhost:<port>/...` redirect URI sent by the client.
+
+## Local read-only testing
+
+`evals/local-mcp/salesforce-readonly-mcp` runs the skills' read calls through an existing `sf`
+CLI login. It exposes Headless 360's `dispatch_readonly` signature, accepts only GET on the
+GraphQL and SOQL query endpoints, and rejects mutations and non-SELECT SOQL before contacting
+Salesforce.
+
+Example Kiro workspace entry:
 
 ```json
 {
@@ -107,12 +111,12 @@ org alias):
 }
 ```
 
-`SF_TARGET_ORG` picks the org; without it, `sf` uses its default target org. Use an org with
-synthetic data. Kiro asks before each tool call unless you approve the tools.
+Always use an org with synthetic data. This local adapter does not implement `display_widget`;
+use the hosted MCP Apps and browser suites for renderer validation.
 
-## Slack and other connectors
+## Slack, email, calendar, and documents
 
-Slack is the only non-Salesforce server declared. Email, calendar, and document connectors
-aren't declared; connect them separately in the client if you want those sources. Without them
-the skills use Salesforce data only, and the draft skills return email text instead of creating
-a draft. Slack content stays a draft until the user approves the exact message and channel.
+Slack is the only optional non-Salesforce server declared in `mcp.json`. Email, calendar, and
+document tools must be configured separately when a host supports them. Draft workflows must
+remain draft-only until a user approves the exact message and destination. A missing optional
+connector should lead to the upstream fallback behavior, not fabricated evidence.

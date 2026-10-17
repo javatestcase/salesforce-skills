@@ -11,20 +11,20 @@ Failing to try first — asking the user to connect, or surfacing a "not connect
 
 - **Execute silently between tool calls.** Do not output planning, progress, transition, waiting, or tool-result narration between calls. Execute tool calls silently and proceed directly to the next call. Parallelize independent tasks by batching tool calls into one turn whenever possible. Before the final output, speak only when the skill explicitly requires user input, approval, an exact notice, or material error/blocked reporting. Do not invent checkpoints.
 - **Keep the final output concise.** Return only the requested result or deliverable. Omit process recaps, tool-call details, redundant preambles or conclusions, and data already shown in a widget.
+- **⛔ WIDGET OUTPUT ONLY after data assembly.** Once all queries return, immediately call `display_widget` — at most a single one-line render-wait notice before it, and no summaries, transitions, or narration. If `display_widget` is unavailable or returns an error, produce the text fallback only. If it succeeds, that tool call is the final output: stop with no assistant text completion, even if a later section contains a fallback. The exceptions above do not apply after success.
 - **Ground dynamic or custom relationship and field names before relying on them.** Fixed standard fields that this skill explicitly marks as requiring no grounding need no extra grounding call. On a name error, use the skill's documented grounding path when present; otherwise report the error instead of guessing or re-firing the same shape.
 - **Cite every value exactly as queried**; never fabricate; distinguish a blank value from a value that was not queried. Link each Salesforce record inline: `https://[instanceUrl]/lightning/r/[SObjectType]/[Id]/view`.
 - **Show human labels, never API/field literals.** In anything the user sees, print each field's grounded `label` (for example, "Deal Risk", not `Deal_Risk__c`) and record Names, never raw Ids or `__c` API names.
 - **Empty `MINE` scope → fail fast, then ask which scope.** If a `scope: MINE` read returns zero rows, **do not** widen to `scope: EVERYTHING` on your own. Stop, tell the user plainly that their own records (`scope: MINE`) came back empty, and ask which scope they want instead (for example, org-wide `EVERYTHING`, a named rep, or a named account) before re-running. Never invent records, and never silently fall back to org-wide.
 - **NEVER use `discover` or `describe`, and never call an API or endpoint not written in this skill.** Every Salesforce URL you need is in the skill. Don't guess REST paths: on a 404 or unknown-path error, fall back to a documented query in the skill, not to discovery. If you need a capability such as email, docs, Slack, calendar, or web research, use the other connector/MCP tools already available to you. Endpoint guessing and discovery add needless round-trips. Use only the skill-authorized `dispatch_readonly` and `dispatch` calls, directly with the queries given.
-> **Portability note.** Written for the Agent Plugins standard. Salesforce calls use the
-> Headless 360 MCP tool `dispatch_readonly`, exactly as in the original plugin; this skill is
-> read-only. On a host whose Salesforce connector has a different read tool (for example,
-> Amazon Quick), send the same `url` and query through that tool.
 <!-- /global-rules-bootstrap -->
+
+# Rules:
+
 
 # Close Plan
 
-Ground → read opp → gather evidence (all ONE turn) → draft business case + MAP. **Read-only:** this skill reads Salesforce and produces documents for the rep; it never writes to Salesforce, and hands any outreach drafting to `draft-outreach`/`call-follow-up`.
+Ground → read opp → gather evidence (all ONE turn) → draft business case + MAP.
 
 ## 1. Ground (hardcoded — Opportunity only)
 
@@ -76,9 +76,515 @@ Flag every claim that has no customer evidence behind it — those are the point
 
 Work backward from the target signature date (default: opportunity CloseDate) through both sides' steps: remaining validation, security review, legal redlines, procurement, signatures, plus any internal approvals the user mentions. Each row: step, owner (us / customer / named person), target date, status. Flag the steps whose dates make the CloseDate impossible.
 
-## 5. Output — business case + MAP (primary, portable)
+## 5. Widget (default output when `display_widget` is present: Cowork/desktop/web)
 
-Assemble the business case and mutual action plan as Markdown. This is the deliverable in any host. Blank fields stay blank; drop steps with no data; never invent content.
+When the data is assembled, call `display_widget`; a single one-line "Displaying the visualization now (this may take a minute)." notice may precede it.
+
+### Self-verification (before calling display_widget)
+
+- [ ] `widgetDefinition` is passed as a native JSON object — not a quoted string, not a code block pasted as text. If the value starts with `"{"`, it is wrong.
+
+The widget template is embedded below — a widget-definition envelope whose leaf values carry `{{token}}` placeholders. Resolve every `{{token}}` to a literal (no `{{…}}`/`{!…}` left), then call `display_widget({ resourceType: "dynamic", widgetDefinition: <hydrated> })` once. A value that is *only* a `{{token}}` (meter arrays, datagrid rows) becomes the typed literal — arrays stay arrays, numbers stay numbers; a `{{token}}` inside a larger string is interpolated as text. No fabricated content: blank fields stay blank, drop steps with no data.
+
+Layout (editorial restraint, one chart): header (check-circle icon + serif title + status badge) → subhead caption → one meter (close-plan progress) → path-to-signature datagrid → one `variant:"error"` synthesis callout with two buttons.
+
+Two blocks below: first the **variable contract** (`renderer.props.schema.json`) — every `{{token}}`'s type + a worked example, use it to compute each value; then the **widget template** to hydrate. Substitute your computed values into the template's `{{token}}`s (see the token-typing rules above), leaving no `{{…}}`/`{!…}`.
+```json
+{
+  "$comment": "Variable contract for the native-mosaic dynamic-mode template (renderer.json, sibling). This is NOT a separate display_widget call — it names every {{token}} in the template with its type and a worked example so you compute the right value for each. Workflow: build a props object with these keys, substitute each into the matching {{token}} in renderer.json (a slot that is only a {{token}} becomes the typed value — arrays stay arrays, numbers stay numbers; a {{token}} inside a larger string interpolates as text; a key you have no data for is omitted so that leaf drops), then call display_widget({ resourceType: 'dynamic', widgetDefinition: <the hydrated template> }) once with no {{…}}/{!…} left. Realistic values: sample-data.json (sibling). Authoring guidance (from the skill): `planTitle` (header title, \"Mutual close plan — [Account]\") + `headerStatus` (header badge, e.g. \"6 DAYS OUT\") · `subtitle` (one line: amount, target close, days out, steps done) · meter — `progressValue`/`progressMax`/`progressTarget` (numbers), `progressValueLabel`/`progressTargetLabel`/`progressStatus` (strings), `progressBands` (array of `{ from, to, variant, label }`, variants warning/success, covering 0→max in order) · `pathRows` (datagrid array, one row per action-plan step, each `{ step, side:{value,badgeVariant}, owner (plain string — format as the person's display name (e.g. \"R. Chen\"); names must be plain strings, not objects: use `Contact.Name.value` or `User.Name.value` from the SF response), due (ISO YYYY-MM-DD), state:{value,badgeVariant}, status:{value,badgeVariant} (value Critical/At risk/On track/Target, badgeVariant error/warning/info/default) }`; the leading Status column reads each row's `status`; Side badgeVariant primary=Us / secondary=Them / info=Both; State badgeVariant error=Due today/Critical, warning=In review/Waiting/At risk, info=Scheduled, secondary=Target/On track) · callout — `calloutTitle` (headline blocker), `calloutDesc` (cost if it slips), primary button `ctaLabel`/`ctaMsg` (`action/sendMessage`, first-person prompt), secondary `oppUrl` (`action/openLink`, `https://<myDomain>/lightning/r/Opportunity/<Id>/view` — omit if no Id). Before calling: no `{{…}}`/`{!…}` remain, meter is the only chart, every button is `action/sendMessage` or `action/openLink` with real content.",
+  "props": {
+    "planTitle": {
+      "description": "Header title — \"Mutual close plan — [Account]\".",
+      "type": "string",
+      "example": "Mutual close plan — Cobalt Robotics"
+    },
+    "headerStatus": {
+      "description": "Header urgency badge (e.g. \"6 DAYS OUT\").",
+      "type": "string",
+      "example": "6 DAYS OUT"
+    },
+    "subtitle": {
+      "description": "One-line summary: amount, target close date, days out, steps done.",
+      "type": "string",
+      "example": "$1.8M · target close Jul 30 · 6 days out · 4 of 9 steps done"
+    },
+    "progressValue": {
+      "description": "Steps completed (weighted progress) — the meter's current value.",
+      "type": "number",
+      "example": 4
+    },
+    "progressMax": {
+      "description": "Total steps — the meter's max.",
+      "type": "number",
+      "example": 9
+    },
+    "progressTarget": {
+      "description": "Target progress marker on the meter.",
+      "type": "number",
+      "example": 9
+    },
+    "progressValueLabel": {
+      "description": "Display string for current progress (e.g. \"4 of 7 steps\").",
+      "type": "string",
+      "example": "4 of 9 steps complete"
+    },
+    "progressTargetLabel": {
+      "description": "Display string for the target.",
+      "type": "string",
+      "example": "9 to sign"
+    },
+    "progressStatus": {
+      "description": "Short progress read shown on the meter.",
+      "type": "string",
+      "example": "on the critical path"
+    },
+    "progressBands": {
+      "description": "Color bands for the progress meter, in order covering 0→max.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "Band start value.",
+            "type": "number"
+          },
+          "to": {
+            "description": "Band end value.",
+            "type": "number"
+          },
+          "variant": {
+            "description": "Band color.",
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "success"
+            ]
+          },
+          "label": {
+            "description": "Short band label.",
+            "type": "string"
+          }
+        }
+      },
+      "example": [
+        {
+          "from": 0,
+          "to": 5,
+          "variant": "warning",
+          "label": "In progress"
+        },
+        {
+          "from": 5,
+          "to": 9,
+          "variant": "success",
+          "label": "Closing"
+        }
+      ]
+    },
+    "pathRows": {
+      "description": "Mutual action-plan steps — one row per step. Empty array → the datagrid is omitted.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "Leading Status badge cell; omit on normal rows.",
+            "type": "object",
+            "properties": {
+              "value": {
+                "description": "Status label.",
+                "type": "string"
+              },
+              "badgeVariant": {
+                "description": "Badge color.",
+                "type": "string",
+                "enum": [
+                  "neutral",
+                  "primary",
+                  "secondary",
+                  "outline",
+                  "success",
+                  "info",
+                  "warning",
+                  "error"
+                ]
+              }
+            }
+          },
+          "step": {
+            "description": "The action-plan step / task.",
+            "type": "string"
+          },
+          "side": {
+            "description": "Which side owns the step (badge cell).",
+            "type": "object",
+            "properties": {
+              "value": {
+                "description": "Side label — Us / Them / Both.",
+                "type": "string"
+              },
+              "badgeVariant": {
+                "description": "Side badge color: primary=Us, secondary=Them, info=Both.",
+                "type": "string",
+                "enum": [
+                  "neutral",
+                  "primary",
+                  "secondary",
+                  "outline",
+                  "success",
+                  "info",
+                  "warning",
+                  "error"
+                ]
+              }
+            }
+          },
+          "owner": {
+            "description": "Step owner's display name, a plain string (use Contact.Name.value or User.Name.value — never a nested object).",
+            "type": "string"
+          },
+          "due": {
+            "description": "Step due date, ISO YYYY-MM-DD.",
+            "type": "string"
+          },
+          "state": {
+            "description": "Step status badge cell.",
+            "type": "object",
+            "properties": {
+              "value": {
+                "description": "Status label (e.g. \"Due today\", \"Scheduled\", \"On track\").",
+                "type": "string"
+              },
+              "badgeVariant": {
+                "description": "Status badge color: error=Due today/Critical, warning=In review/Waiting/At risk, info=Scheduled, secondary=Target/On track.",
+                "type": "string",
+                "enum": [
+                  "neutral",
+                  "primary",
+                  "secondary",
+                  "outline",
+                  "success",
+                  "info",
+                  "warning",
+                  "error"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "example": [
+        {
+          "status": {
+            "value": "Critical",
+            "badgeVariant": "error"
+          },
+          "step": "Send redlined MSA",
+          "side": {
+            "value": "Us",
+            "badgeVariant": "neutral"
+          },
+          "owner": "You",
+          "due": "2026-07-24",
+          "state": {
+            "value": "Due today",
+            "badgeVariant": "error"
+          }
+        },
+        {
+          "status": {
+            "value": "At risk",
+            "badgeVariant": "warning"
+          },
+          "step": "Security review sign-off",
+          "side": {
+            "value": "Them",
+            "badgeVariant": "neutral"
+          },
+          "owner": "R. Chen",
+          "due": "2026-07-25",
+          "state": {
+            "value": "In review",
+            "badgeVariant": "warning"
+          }
+        },
+        {
+          "status": {
+            "value": "On track",
+            "badgeVariant": "info"
+          },
+          "step": "CFO final price approval",
+          "side": {
+            "value": "Us",
+            "badgeVariant": "neutral"
+          },
+          "owner": "M. Lee",
+          "due": "2026-07-26",
+          "state": {
+            "value": "Scheduled",
+            "badgeVariant": "info"
+          }
+        },
+        {
+          "status": {
+            "value": "At risk",
+            "badgeVariant": "warning"
+          },
+          "step": "Legal redlines returned",
+          "side": {
+            "value": "Them",
+            "badgeVariant": "neutral"
+          },
+          "owner": "Buyer legal",
+          "due": "2026-07-28",
+          "state": {
+            "value": "Waiting",
+            "badgeVariant": "warning"
+          }
+        },
+        {
+          "status": {
+            "value": "At risk",
+            "badgeVariant": "warning"
+          },
+          "step": "Procurement PO",
+          "side": {
+            "value": "Them",
+            "badgeVariant": "neutral"
+          },
+          "owner": "Buyer",
+          "due": "2026-07-29",
+          "state": {
+            "value": "Waiting",
+            "badgeVariant": "warning"
+          }
+        },
+        {
+          "step": "Signature",
+          "side": {
+            "value": "Both",
+            "badgeVariant": "info"
+          },
+          "owner": "Dana Kwon",
+          "due": "2026-07-30",
+          "state": {
+            "value": "Target",
+            "badgeVariant": "neutral"
+          }
+        }
+      ]
+    },
+    "calloutTitle": {
+      "description": "Synthesis callout heading — the headline blocker.",
+      "type": "string",
+      "example": "Redlines are due today and gate everything after"
+    },
+    "calloutDesc": {
+      "description": "Synthesis callout body — the cost if the deal slips.",
+      "type": "string",
+      "example": "The MSA hasn't gone out and four downstream steps wait on it. Send it this morning; if it slips a day, the Jul 30 signature date is no longer realistic and the deal moves to next quarter."
+    },
+    "ctaLabel": {
+      "description": "Primary button label (action/sendMessage).",
+      "type": "string",
+      "example": "Draft MSA send"
+    },
+    "ctaMsg": {
+      "description": "First-person prompt the primary button sends (action/sendMessage).",
+      "type": "string",
+      "example": "Draft a note to legal and the Cobalt legal counterpart attaching the redlined MSA, flagging that security review and procurement both wait on this, with Jul 30 close date."
+    },
+    "oppUrl": {
+      "description": "Opportunity Lightning URL for the secondary \"View in Salesforce\" button (action/openLink); omit if no Id.",
+      "type": "string",
+      "example": "https://org.lightning.force.com/lightning/r/Opportunity/006AX00000M8k2pYAD/view"
+    }
+  }
+}
+```
+```json
+{
+  "renderer": {
+    "componentOverrides": {
+      "$": {
+        "type": "mosaic",
+        "definition": "tile/widget",
+        "children": [
+          {
+            "definition": "tile/row",
+            "attributes": {
+              "gap": "sm",
+              "align": "center",
+              "justify": "between",
+              "isWrapped": true
+            },
+            "children": [
+              {
+                "definition": "tile/row",
+                "attributes": {
+                  "gap": "sm",
+                  "align": "center"
+                },
+                "children": [
+                  {
+                    "definition": "tile/icon",
+                    "attributes": {
+                      "name": "check-circle",
+                      "size": "xl",
+                      "alt": ""
+                    }
+                  },
+                  {
+                    "definition": "tile/text",
+                    "attributes": {
+                      "text": "{{planTitle}}",
+                      "variant": "h1"
+                    }
+                  }
+                ]
+              },
+              {
+                "definition": "tile/badge",
+                "attributes": {
+                  "label": "{{headerStatus}}",
+                  "variant": "warning"
+                }
+              }
+            ]
+          },
+          {
+            "definition": "tile/text",
+            "attributes": {
+              "text": "{{subtitle}}",
+              "variant": "caption",
+              "color": "muted"
+            }
+          },
+          {
+            "definition": "tile/separator"
+          },
+          {
+            "definition": "tile/meter",
+            "attributes": {
+              "label": "Close plan progress",
+              "value": "{{progressValue}}",
+              "min": 0,
+              "max": "{{progressMax}}",
+              "target": "{{progressTarget}}",
+              "valueFormat": "number",
+              "valueLabel": "{{progressValueLabel}}",
+              "targetLabel": "{{progressTargetLabel}}",
+              "status": "{{progressStatus}}",
+              "size": "lg",
+              "bands": "{{progressBands}}"
+            }
+          },
+          {
+            "definition": "tile/datagrid",
+            "attributes": {
+              "caption": "Path to signature, by date",
+              "appearance": "striped",
+              "size": "sm",
+              "columns": [
+                {
+                  "key": "status",
+                  "header": "Status",
+                  "type": "badge"
+                },
+                {
+                  "key": "step",
+                  "header": "Step",
+                  "type": "text"
+                },
+                {
+                  "key": "side",
+                  "header": "Side",
+                  "type": "badge"
+                },
+                {
+                  "key": "owner",
+                  "header": "Owner",
+                  "type": "avatar"
+                },
+                {
+                  "key": "due",
+                  "header": "Due",
+                  "type": "date"
+                },
+                {
+                  "key": "state",
+                  "header": "State",
+                  "type": "badge"
+                }
+              ],
+              "rows": "{{pathRows}}"
+            }
+          },
+          {
+            "definition": "tile/callout",
+            "attributes": {
+              "variant": "error",
+              "title": "{{calloutTitle}}",
+              "description": "{{calloutDesc}}"
+            },
+            "children": [
+              {
+                "definition": "tile/row",
+                "attributes": {
+                  "gap": "sm",
+                  "align": "center",
+                  "isWrapped": true
+                },
+                "children": [
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "{{ctaLabel}}",
+                      "variant": "primary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/sendMessage",
+                            "attributes": {
+                              "content": "{{ctaMsg}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "definition": "tile/button",
+                    "attributes": {
+                      "label": "View in Salesforce",
+                      "iconName": "open-in-new",
+                      "variant": "secondary",
+                      "actions": {
+                        "click": [
+                          {
+                            "definition": "action/openLink",
+                            "attributes": {
+                              "url": "{{oppUrl}}"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+
+## 6. Text — FALLBACK ONLY — DO NOT USE IF `display_widget` SUCCEEDED
 
 ```
 # Close Plan: [Opp Name] - [Account]
@@ -118,19 +624,13 @@ Assemble the business case and mutual action plan as Markdown. This is the deliv
 
 **Date conflicts:** [Steps whose dates make CloseDate impossible]
 
-## Suggested CRM edits (for the rep to make)
+## Suggested SFDC updates
 - NextStep → "[next dated step from the plan]"
-- CloseDate → [if the backward plan says the current date isn't credible]
-[These are recommendations only — this skill reads, it does not write. Make them in Salesforce yourself, or hand editing to a guided-write skill.]
+- CloseDate → [if backward plan says current date not credible]
+[Apply with `update-opportunity`, or manually if read-only.]
 
-## Champion note (hand to `draft-outreach`)
-[The action plan to share, asking the champion to confirm owners on their side — drafting is out of scope here.]
+## Draft email to champion
+[Sharing the action plan and asking them to confirm owners on their side]
 ```
 
-Link the opportunity inline (`https://[instanceUrl]/lightning/r/Opportunity/[Id]/view`).
-
-**Offer to assemble the artifacts as shareable documents** if a docs connector is present (a capability call, not an SF read — skip silently if absent): the business case as a customer-facing doc, and the mutual action plan as a co-ownable table. Degrade to the inline Markdown above when no docs tool is available.
-
-## 6. Rich visualization (host-specific — optional)
-
-If the host provides a rich rendering surface (e.g. Amazon Quick dashboards or Apps in Quick), a close-plan progress meter and path-to-signature datagrid may be rendered **in addition to** the Markdown above. That layout is not part of the portable skill — see the plugin's host-extension directory (`com.salesforce.quick/ui`). When no rich surface is available, the Markdown in Step 5 is the whole deliverable.
+**Offer to create the artifacts as shareable documents** if a docs connector is present (capability call, not an SF read — skip silently if absent): the business case as a customer-facing doc, and the mutual action plan as a co-ownable table. Degrade to the inline markdown above when no docs tool is available.

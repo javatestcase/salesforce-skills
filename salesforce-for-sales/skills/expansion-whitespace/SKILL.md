@@ -45,7 +45,7 @@ dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
     queryParams: { "q": "SELECT Id, AccountId, Account.Name, Name, Amount, CloseDate, StageName FROM Opportunity WHERE AccountId IN ('<ID1>','<ID2>',...) AND (Amount = <USER_AMOUNT> OR Name LIKE '%<USER_PRODUCT>%' OR CloseDate >= TODAY) ORDER BY CloseDate DESC LIMIT 50" })
   ```
   Match by Amount or product name. Take that AccountId, continue to Step 2.
-  
+
 - **Else:** List candidates (Name · Website/Industry · Owner · Id) and ask user to pick.
 
 **None** → broaden name or ask for correct account. Don't guess.

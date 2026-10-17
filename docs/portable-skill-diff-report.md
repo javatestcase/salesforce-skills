@@ -1,107 +1,171 @@
-# Portable Skill Diff Report
+# Portable skill diff report
 
-## Scope and baseline
+## Comparison method
 
-This compares each current upstream Claude/Cowork skill in `salesforce-for-sales/skills/` with its portable Agent Plugins counterpart in `agent-plugin/skills/`.
+This is a mechanical, line-by-line comparison of the current files generated with Python standard-library `difflib.unified_diff` using exactly three context lines (`n=3`). It does not infer semantic equivalence.
 
-**Verdicts**
-- **Portable output only** — Salesforce reads and analysis rules are preserved; required Cowork widget delivery becomes Markdown-first, with optional host-specific rich rendering.
-- **Safety clarification** — no data-path change, but draft-only or user-applied-write behavior is made more explicit.
-- **Material** — a Salesforce read, execution shape, or user-visible fallback changed.
+- Source: `salesforce-for-sales/skills/<name>/SKILL.md`
+- Active: `agent-plugin/skills/<name>/SKILL.md`
+- Additions and deletions count `+` and `-` content lines emitted by that same unified diff, excluding file headers.
+- Status is `Exact match` when the unified diff is empty and `Approved deviation` only for the three reviewed changes below.
 
-## Cross-cutting changes
+## Inventory
 
-1. **Widget-first → Markdown-first.** Upstream skills generally require `display_widget` on Cowork when available, with text as fallback. Portable skills make Markdown the primary deliverable and move rich output to the optional `com.salesforce.quick/ui` extension. This changes presentation and removes Cowork-only `display_widget` dependencies; it does not, by itself, alter Salesforce analysis.
-2. **Host-neutral Salesforce adapter.** Portable skills retain the documented `dispatch_readonly` URL/query contract but say a host such as Quick can use an equivalent configured read tool.
-3. **Read-only posture is explicit.** Portable skills consistently state that Salesforce writes are not performed. Where applicable, proposed CRM changes are a checklist for the user rather than an action the skill performs.
-4. **Optional connectors remain optional.** Email, docs, calendar, web, and Slack are still used where upstream used them. The portable skills do not disable them. A host without a connector skips optional evidence or uses a documented text fallback.
+| Inventory item | Count / value |
+|---|---|
+| Source skills | 34 |
+| Active skills | 34 |
+| Shared skills | 34 |
+| Source-only skills | None |
+| Active-only skills | None |
+| Byte-identical shared skills | 31 |
+| Approved deviations | 3 |
 
-## Skill-by-skill comparison
+All `display_widget` instructions, renderer JSON, variable contracts, and text fallbacks are preserved. The active tree remains a complete mirror except for the three approved, non-widget deviations documented below.
 
-| Skill | Verdict | What changed and why |
-|---|---|---|
-| `account-context` | Portable output only | Account resolution, four ObjectInfo grounding calls, account-by-ID read, aggregate, and optional email/docs/Slack enrichment are unchanged. Mandatory widget delivery became a Markdown account brief. The portable version explicitly notes unavailable optional sources rather than implying account silence. |
-| `account-tiering` | Portable output only | Account/Opportunity/Contact reads, tier logic, and optional evidence sources are unchanged. Markdown tiers replace required Cowork widget delivery. |
-| `calendar-events` | Portable output only | Current-user timezone and scoped Event reads, including polymorphic `Who`/`What` handling, are unchanged. Markdown schedule is primary; rich schedule is optional. |
-| `call-follow-up` | Safety clarification | Salesforce grounding and account/opportunity-history reads are unchanged. Upstream already required an email draft and Slack draft; portable wording explicitly forbids sending or posting without user action, makes CRM changes a user-applied checklist, and retains copyable Slack text when draft creation is unavailable. |
-| `call-prep` | Portable output only | Meeting resolution, account grounding, account/activity reads, and optional email/docs/Slack enrichment are unchanged. Markdown call brief replaces widget-first delivery. |
-| `close-plan` | Safety clarification | Opportunity/contact-role reads and business-case/MAP logic are unchanged. Portable wording makes proposed CRM changes user-applied recommendations, not a host write action. |
-| `customer-health` | Portable output only | Account, opportunity, case, and task reads plus optional email/calendar/docs/Slack evidence are unchanged. Output is Markdown-first. |
-| `customer-voice` | Portable output only | Salesforce account scope, internal-speaker checks, and optional transcript/email evidence behavior are unchanged. Portable output is a Markdown digest instead of a required widget. |
-| `daily-briefing` | **Material** | Retains the calendar, closing-soon, past-due, current-user, and meeting-context reads. Adds two Salesforce aggregate reads for closing-soon and past-due sections. Counts and amounts must now come from server aggregates, never from the bounded `first:50` detail rows; output discloses partial detail rows. **Why:** makes totals authoritative and avoids misleading totals from capped samples. |
-| `deal-advance-gap` | Portable output only | Opportunity grounding, resolution, rich detail, and optional evidence reads are unchanged. The exit-criteria plan is Markdown-first. |
-| `deal-review` | Safety clarification | Opportunity, contact-role, activity, and history reads plus health analysis are unchanged. Suggested Salesforce changes are explicitly user-applied. |
-| `deal-signals` | Portable output only | Current-user/ObjectInfo grounding and account-owner-scoped open-book sweep are unchanged. Same optional evidence; Markdown signal digest replaces widget-first output. |
-| `deal-slip-scenario` | Portable output only | Opportunity grounding, open-quarter pipeline, and closed-won baseline reads are unchanged. The scenario is delivered in Markdown instead of a required widget. |
-| `draft-outreach` | Safety clarification | Contact/account/activity Salesforce reads and optional email/docs/Slack evidence are unchanged. The original already said draft, not send; portable adds a specific send-only-mail fallback: return subject/body for copy/paste rather than send. |
-| `expansion-whitespace` | Safety clarification | Account/contact grounding and won-opportunity/line-item reads are unchanged. Suggested opportunity shapes are explicitly suggestions for a rep to pursue, not records to create. |
-| `find-internal-answer` | **Material** | Adds a concrete, bounded Opportunity lookup by `%TOPIC%`, returning recent matching opportunities, owners, and accounts. It is used only as a pointer to someone who handled a similar deal, never as a policy source. **Why:** gives a Salesforce-only fallback when docs/Slack/email are unavailable and makes the answer actionable without inventing policy. |
-| `forecast-narrative` | **Material** | Changes the `OpportunityFieldHistory.CreatedDate` predicate from `%QSTART%` to `%QSTART%T00:00:00Z`. **Why:** `CreatedDate` is a date-time field; the bare date fails Salesforce validation. This restores the history-based movement section. Submission remains manual. |
-| `handle-objection` | **Material** | Adds a bounded Opportunity lookup by deal-name fragment, including stage, amount, close date, description, account, owner, and contact roles. **Why:** lets the response cite the customer’s recorded deal context when optional evidence tools are absent. No writes are added. |
-| `inbox-sweep` | Safety clarification | Account/open-opportunity context read and inbox classification are unchanged. Adds the same send-only-mail fallback as `draft-outreach`: return copyable reply text rather than send. |
-| `lead-triage` | **Material** | Changes Lead `Owner` from a User-only selection to User-or-Group fragments. **Why:** queue-owned Leads otherwise fail the GraphQL owner span; portable output can now identify the queue for routing. Lead/Account reads and triage scoring remain unchanged. |
-| `pipeline-review` | Portable output only | Grounding, scoped sample/aggregate, win-rate, missing-next-step, and SOQL fallback queries are unchanged. The same analysis is presented as Markdown. |
-| `query-activity-history` | Portable output only | Record resolution and ActivityHistories SOQL query, fields, order, and cap are unchanged. Timeline output is Markdown-first; logging remains a separate workflow. |
-| `renewal-radar` | Portable output only | Scope resolution, Opportunity grounding, bounded renewal detail, matching aggregate, and optional evidence reads are unchanged. Portable output preserves the full-book-total versus scored-sample disclosure in Markdown. |
-| `rep-context` | Portable output only | Active-user resolution, open-book sample, stage aggregate, activity counts, and won aggregate are unchanged. Slack/calendar evidence stays optional; output is Markdown-first. |
-| `research-prospect` | Portable output only | Account grounding, Name-first duplicate check, Website fallback, and web research topics are unchanged. Portable framing makes the duplicate-check/read-only intent explicit. |
-| `salesforce-hygiene-check` | Safety clarification | Opportunity grounding and 200-row open-book audit are unchanged. Upstream’s host-specific follow-on updater route is removed; recommendations are explicitly manual rep actions. Audit findings are unchanged. |
-| `stakeholder-map` | Safety clarification | Contact grounding, deal resolution, OCR/contact reads, account roster, and optional email/calendar/docs/Slack evidence are unchanged. Portable wording says dark contacts are listed for the rep to add, not created by the skill. |
-| `team-pipeline` | Portable output only | User/Opportunity grounding, team resolution, closed-won aggregate, sample/forecast aggregate, hygiene aggregates, and SOQL fallbacks are unchanged. Claude-specific temporary-file/bash recovery text is removed; the Markdown scoreboard is primary. |
-| `voice-profile` | Portable output only | No Salesforce reads exist in either version; both analyze sent mail only. The host-specific `/mcp` instruction is removed and replaced with host-email-connector wording. It still neither sends nor writes. |
-| `weekly-wrap` | **Material** | Upstream combines six detail roots and six aggregate roots in one GraphQL dispatch. Salesforce limits a request to 10 data fetchers, so the 12-root call fails. Portable keeps every root and filter but splits them into two dispatches: detail and aggregate. **Why:** verified against API v60.0–v68.0 and real Headless 360; the split returns the intended report where upstream fails. Slack remains draft-only. |
-| `win-loss-review` | Portable output only | Opportunity grounding, 200-row closed-opportunity read, history child query, scope handling, and optional transcript/email evidence are unchanged. Markdown review replaces widget-first delivery. |
+## Skill summary
 
-## Material-change detail and evidence
+| Skill | Source lines | Active lines | Additions | Deletions | Status |
+|---|---:|---:|---:|---:|---|
+| `account-context` | 880 | 880 | 0 | 0 | Exact match |
+| `account-tiering` | 660 | 660 | 0 | 0 | Exact match |
+| `calendar-events` | 499 | 499 | 0 | 0 | Exact match |
+| `call-follow-up` | 164 | 164 | 0 | 0 | Exact match |
+| `call-prep` | 645 | 645 | 0 | 0 | Exact match |
+| `close-plan` | 636 | 636 | 0 | 0 | Exact match |
+| `configure` | 322 | 322 | 0 | 0 | Exact match |
+| `customer-health` | 628 | 628 | 0 | 0 | Exact match |
+| `customer-voice` | 68 | 68 | 0 | 0 | Exact match |
+| `daily-briefing` | 596 | 596 | 0 | 0 | Exact match |
+| `deal-advance-gap` | 596 | 596 | 0 | 0 | Exact match |
+| `deal-review` | 940 | 940 | 0 | 0 | Exact match |
+| `deal-signals` | 538 | 538 | 0 | 0 | Exact match |
+| `deal-slip-scenario` | 627 | 627 | 0 | 0 | Exact match |
+| `draft-outreach` | 387 | 387 | 0 | 0 | Exact match |
+| `expansion-whitespace` | 740 | 740 | 0 | 0 | Exact match |
+| `find-internal-answer` | 53 | 53 | 0 | 0 | Exact match |
+| `forecast-narrative` | 635 | 635 | 1 | 1 | Approved deviation |
+| `handle-objection` | 55 | 55 | 0 | 0 | Exact match |
+| `inbox-sweep` | 451 | 451 | 0 | 0 | Exact match |
+| `lead-triage` | 699 | 699 | 1 | 1 | Approved deviation |
+| `pipeline-review` | 657 | 657 | 0 | 0 | Exact match |
+| `query-activity-history` | 531 | 531 | 0 | 0 | Exact match |
+| `renewal-radar` | 756 | 756 | 0 | 0 | Exact match |
+| `rep-context` | 482 | 482 | 0 | 0 | Exact match |
+| `research-prospect` | 571 | 571 | 0 | 0 | Exact match |
+| `salesforce-hygiene-check` | 630 | 630 | 0 | 0 | Exact match |
+| `stakeholder-map` | 607 | 607 | 0 | 0 | Exact match |
+| `team-pipeline` | 769 | 769 | 0 | 0 | Exact match |
+| `update` | 35 | 35 | 0 | 0 | Exact match |
+| `using-display-widget` | 306 | 306 | 0 | 0 | Exact match |
+| `voice-profile` | 70 | 70 | 0 | 0 | Exact match |
+| `weekly-wrap` | 326 | 331 | 13 | 8 | Approved deviation |
+| `win-loss-review` | 357 | 357 | 0 | 0 | Exact match |
 
-### `daily-briefing`: authoritative totals
+## Deviation decisions
 
-- **Upstream:** concrete `first:50` detail reads for closing-soon and past-due opportunities.
-- **Portable:** keeps those reads and adds matching aggregate queries for `Id.count` and `Amount.sum`.
-- **Impact:** headers and totals cover all matching opportunities; detail rows remain bounded and are labeled as partial when necessary.
-- **References:** upstream [`daily-briefing`](../salesforce-for-sales/skills/daily-briefing/SKILL.md#L41); portable [`daily-briefing`](../agent-plugin/skills/daily-briefing/SKILL.md#L28).
+| Skill | Issue | Exact change | Why necessary | Value |
+|---|---|---|---|---|
+| `lead-triage` | [#9](https://github.com/salesforce/salesforce-skills/issues/9) | Keep `Owner { ... on User { Name { value } } }` and add the adjacent `... on Group { Name { value } }` fragment. | `Lead.Owner` is a polymorphic User/Group union, so selecting a shared `Name` is invalid and a User-only fragment does not resolve queue ownership. | Both user-owned and queue-owned leads resolve with an owner name. |
+| `forecast-narrative` | [#15](https://github.com/salesforce/salesforce-skills/issues/15) | Change only the field-history boundary from `CreatedDate >= %QSTART%` to `CreatedDate >= %QSTART%T00:00:00Z`. | `OpportunityFieldHistory.CreatedDate` requires a DateTime literal, while `%QSTART%` is a date. | The movement fallback executes without changing date-only opportunity filters. |
+| `weekly-wrap` | [#16](https://github.com/salesforce/salesforce-skills/issues/16) | Split the single 12-root request into two parallel `dispatch_readonly` calls: six detail roots and six aggregate roots; update only the directly affected recovery wording. | Salesforce GraphQL allows at most 10 data fetchers, so the combined six-detail/six-aggregate request always fails at 12. | Both six-root reads stay under the limit, and an aggregate failure no longer discards detail rows. |
 
-### `find-internal-answer`: concrete Salesforce fallback
+## Complete unified diffs
 
-- **Upstream:** directs a generic Salesforce check for approval/history questions.
-- **Portable:** queries recent matching opportunities and surfaces their owners as people to ask.
-- **Impact:** a question can return a grounded contact point even without document, Slack, or email connectors; it must not be presented as policy.
-- **References:** upstream [`find-internal-answer`](../salesforce-for-sales/skills/find-internal-answer/SKILL.md); portable [`find-internal-answer`](../agent-plugin/skills/find-internal-answer/SKILL.md#L41).
+Only the three differing skills have diff blocks. The headers use the exact relative source and active paths, and every hunk has the three context lines emitted by `difflib.unified_diff(..., n=3)`.
 
-### `forecast-narrative`: date-time repair
+**Whitespace notation:** Inside the rendered diff lines below, U+2420 `␠` represents each terminal ASCII space. This substitution is applied only after diff generation, so terminal whitespace remains visible without introducing trailing whitespace into this report. In particular, an otherwise blank context line is rendered as `␠` because the unified-diff context marker itself is a terminal space.
 
-- **Upstream:** filters `OpportunityFieldHistory.CreatedDate` with a date literal.
-- **Portable:** appends `T00:00:00Z` to produce a valid date-time value.
-- **Impact:** restores the history fallback for forecast movement instead of failing its SOQL query.
-- **References:** upstream [`forecast-narrative`](../salesforce-for-sales/skills/forecast-narrative/SKILL.md#L74); portable [`forecast-narrative`](../agent-plugin/skills/forecast-narrative/SKILL.md#L74).
+### `forecast-narrative`
 
-### `handle-objection`: grounded deal context
+````diff
+--- salesforce-for-sales/skills/forecast-narrative/SKILL.md
++++ agent-plugin/skills/forecast-narrative/SKILL.md
+@@ -74,7 +74,7 @@
+ Prior snapshot pasted → diff it (up / slipped / added / lost). No snapshot → pull this quarter's field history for the delta (SOQL only — `OpportunityFieldHistory` has no GraphQL form), and only skip the section if that too is empty/unavailable:
+ ```
+ dispatch_readonly(method: "GET", url: "/services/data/v63.0/query",
+-  queryParams: { "q": "SELECT OpportunityId, Field, OldValue, NewValue, CreatedDate FROM OpportunityFieldHistory WHERE CreatedDate >= %QSTART% AND Field IN ('StageName','Amount','CloseDate') ORDER BY CreatedDate DESC" })
++  queryParams: { "q": "SELECT OpportunityId, Field, OldValue, NewValue, CreatedDate FROM OpportunityFieldHistory WHERE CreatedDate >= %QSTART%T00:00:00Z AND Field IN ('StageName','Amount','CloseDate') ORDER BY CreatedDate DESC" })
+ ```
+ Derive moved-up / slipped / added / lost from those rows. Per **Commit**/**Best Case** deal, one grounded line — status, what's needed, risk (cite `NextStep`/`LastActivityDate`). Link each deal. **Leader/team rollup across many reps:** cap per-deal commentary to top 5 by Amount per rep.
+␠
+````
 
-- **Upstream:** says to pull the deal itself but has no explicit Salesforce template.
-- **Portable:** adds a bounded deal lookup and safe disambiguation rule.
-- **Impact:** objection responses can cite the current deal’s recorded metrics, pain, stakeholders, and next step.
-- **References:** upstream [`handle-objection`](../salesforce-for-sales/skills/handle-objection/SKILL.md#L31); portable [`handle-objection`](../agent-plugin/skills/handle-objection/SKILL.md#L33).
+### `lead-triage`
 
-### `lead-triage`: queue-owner support
+````diff
+--- salesforce-for-sales/skills/lead-triage/SKILL.md
++++ agent-plugin/skills/lead-triage/SKILL.md
+@@ -50,7 +50,7 @@
+ **Lead (by identifier user provided — Id, email, or name+company):**
+ ```
+ dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
+-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Lead(where: { <LEAD_FILTER> }, first: 1) { edges { node { Id Name { value } Company { value } Title { value } Email { value } LeadSource { value } Status { value } CreatedDate { value } <LEAD_CUSTOM> Owner { ... on User { Name { value } } } } } } } } }\"}" })
++  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Lead(where: { <LEAD_FILTER> }, first: 1) { edges { node { Id Name { value } Company { value } Title { value } Email { value } LeadSource { value } Status { value } CreatedDate { value } <LEAD_CUSTOM> Owner { ... on User { Name { value } } ... on Group { Name { value } } } } } } } } }\"}" })
+ ```
+␠
+ **Account (by company name or domain):**
+````
 
-- **Upstream:** selects Lead owner through the User fragment only.
-- **Portable:** selects either User or Group.
-- **Impact:** queue-owned leads can be read and routed instead of producing an owner-field error.
-- **References:** upstream [`lead-triage`](../salesforce-for-sales/skills/lead-triage/SKILL.md#L53); portable [`lead-triage`](../agent-plugin/skills/lead-triage/SKILL.md#L42).
+### `weekly-wrap`
 
-### `weekly-wrap`: valid GraphQL execution
+````diff
+--- salesforce-for-sales/skills/weekly-wrap/SKILL.md
++++ agent-plugin/skills/weekly-wrap/SKILL.md
+@@ -46,20 +46,25 @@
+   ```
+   Capture the Ids as `<TEAM_USER_IDS>`; swap every `scope: MINE` in step 2 for `OwnerId: { in: [<TEAM_USER_IDS>] }`. If your org's team hierarchy isn't ManagerId-based, resolve the roster once from context instead of guessing.
+␠
+-## 2. Read — pipeline movement + calendar in ONE dispatch; evidence in the SAME turn
+-
+-**One query, six aliased roots** — closed, new, touched (moved), and closing-next-week Opportunities, plus this-week and next-week meetings. No `OpportunityHistory` read: `LastModifiedDate` on still-open opps is the movement signal, so there's no second object to ground or query. Insert `<OPP_CUSTOM>` = confirmed scalar `__c { value }` fields from step 1.
++## 2. Read — pipeline movement + calendar in TWO dispatches; evidence in the SAME turn
++
++**Why two:** a GraphQL request allows at most 10 subqueries ([Salesforce GraphQL query limits](https://developer.salesforce.com/docs/platform/graphql/guide/query-limits.html)). Six detail roots plus six aggregate roots in one request fails with `ExecutionAborted: The number of data fetchers in the query is 12, exceed the data fetcher limitation 10` (verified v60.0–v68.0). Fire the detail read and the aggregate read below as two `dispatch_readonly` GET GraphQL calls in the same parallel tool turn. Don't merge them back into one request.
++
++**Detail read, six aliased roots:** closed, new, touched (moved), and closing-next-week Opportunities, plus this-week and next-week meetings. No `OpportunityHistory` read: `LastModifiedDate` on still-open opps is the movement signal, so there's no second object to ground or query. Insert `<OPP_CUSTOM>` = confirmed scalar `__c { value }` fields from step 1.
+␠
+ ```
+ dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
+-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { closedThisWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: true }, CloseDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } newThisWeek: Opportunity(scope: MINE, where: { CreatedDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CreatedDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } touchedThisWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, LastModifiedDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } LastModifiedDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } closingNextWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { eq: { literal: NEXT_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } meetingsThisWeek: Event(scope: MINE, where: { ActivityDate: { eq: { literal: THIS_WEEK } } }, orderBy: { StartDateTime: { order: ASC } }, first: 50) { edges { node { Id Subject { value } StartDateTime { value } Location { value } WhatId { value } } } } meetingsNextWeek: Event(scope: MINE, where: { ActivityDate: { eq: { literal: NEXT_WEEK } } }, orderBy: { StartDateTime: { order: ASC } }, first: 50) { edges { node { Id Subject { value } StartDateTime { value } Location { value } WhatId { value } } } } } aggregate { closedAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: true }, CloseDate: { eq: { literal: THIS_WEEK } } }, groupBy: { IsWon: { group: true } }) { edges { node { aggregate { IsWon { value } Id { count { value } } Amount { sum { value } } } } } } newAgg: Opportunity(scope: MINE, where: { CreatedDate: { eq: { literal: THIS_WEEK } } }) { edges { node { aggregate { Id { count { value } } Amount { sum { value } } } } } } touchedAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, LastModifiedDate: { eq: { literal: THIS_WEEK } } }, groupBy: { StageName: { group: true } }) { edges { node { aggregate { StageName { value } Id { count { value } } Amount { sum { value } } } } } } closingAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { eq: { literal: NEXT_WEEK } } }) { edges { node { aggregate { Id { count { value } } Amount { sum { value } } } } } } meetingsThisWeekAgg: Event(scope: MINE, where: { ActivityDate: { eq: { literal: THIS_WEEK } } }) { edges { node { aggregate { Id { count { value } } } } } } meetingsNextWeekAgg: Event(scope: MINE, where: { ActivityDate: { eq: { literal: NEXT_WEEK } } }) { edges { node { aggregate { Id { count { value } } } } } } } } }\"}" })
++  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { closedThisWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: true }, CloseDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } newThisWeek: Opportunity(scope: MINE, where: { CreatedDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CreatedDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } touchedThisWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, LastModifiedDate: { eq: { literal: THIS_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } LastModifiedDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } closingNextWeek: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { eq: { literal: NEXT_WEEK } } }, orderBy: { Amount: { order: DESC } }, first: 50) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } NextStep { value } <OPP_CUSTOM> Account { Name { value } } } } } meetingsThisWeek: Event(scope: MINE, where: { ActivityDate: { eq: { literal: THIS_WEEK } } }, orderBy: { StartDateTime: { order: ASC } }, first: 50) { edges { node { Id Subject { value } StartDateTime { value } Location { value } WhatId { value } } } } meetingsNextWeek: Event(scope: MINE, where: { ActivityDate: { eq: { literal: NEXT_WEEK } } }, orderBy: { StartDateTime: { order: ASC } }, first: 50) { edges { node { Id Subject { value } StartDateTime { value } Location { value } WhatId { value } } } } } } }\"}" })
++
++dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
++  queryParams: { "queryInput": "{\"query\":\"query { uiapi { aggregate { closedAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: true }, CloseDate: { eq: { literal: THIS_WEEK } } }, groupBy: { IsWon: { group: true } }) { edges { node { aggregate { IsWon { value } Id { count { value } } Amount { sum { value } } } } } } newAgg: Opportunity(scope: MINE, where: { CreatedDate: { eq: { literal: THIS_WEEK } } }) { edges { node { aggregate { Id { count { value } } Amount { sum { value } } } } } } touchedAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, LastModifiedDate: { eq: { literal: THIS_WEEK } } }, groupBy: { StageName: { group: true } }) { edges { node { aggregate { StageName { value } Id { count { value } } Amount { sum { value } } } } } } closingAgg: Opportunity(scope: MINE, where: { IsClosed: { eq: false }, CloseDate: { eq: { literal: NEXT_WEEK } } }) { edges { node { aggregate { Id { count { value } } Amount { sum { value } } } } } } meetingsThisWeekAgg: Event(scope: MINE, where: { ActivityDate: { eq: { literal: THIS_WEEK } } }) { edges { node { aggregate { Id { count { value } } } } } } meetingsNextWeekAgg: Event(scope: MINE, where: { ActivityDate: { eq: { literal: NEXT_WEEK } } }) { edges { node { aggregate { Id { count { value } } } } } } } } }\"}" })
+ ```
+␠
+ **Team scope** → swap every `scope: MINE` above for `OwnerId: { in: [\"<TEAM_USER_IDS>\"] }`.
+␠
+-**Aggregates ride in the SAME query — the `aggregate {}` block above, paired root-for-root with the `query {}` detail (one dispatch, not seven).** The six first:50 `query {}` roots are bounded example rows, not the count/$ source — Net $, won/lost, new, touched (by stage), and closing-next-week counts **and amounts** come from the paired `aggregate {}` roots instead: `closedAgg` (grouped by `IsWon`), `newAgg`, `touchedAgg` (grouped by `StageName`), `closingAgg`, `meetingsThisWeekAgg`, `meetingsNextWeekAgg`. The team-scope swap above (`scope: MINE` → `OwnerId: { in: [...] }`) applies to the `aggregate {}` roots too.
+-
+-**Grouping fallback — only if the combined read errors.** `closedAgg` groups on `IsWon` and `touchedAgg` on `StageName`; grouping a boolean/picklist throws `DataFetchingException` in some orgs. If the query errors on either grouped root, re-fire just that total as a SOQL `GROUP BY` (own scope shown; team scope → `OwnerId IN (<TEAM_USER_IDS>)`), which groups cleanly:
++**Aggregate read: the second dispatch above, paired root-for-root with the `query {}` detail (two dispatches, not twelve).** The six first:50 `query {}` roots are bounded example rows, not the count/$ source — Net $, won/lost, new, touched (by stage), and closing-next-week counts **and amounts** come from the paired `aggregate {}` roots instead: `closedAgg` (grouped by `IsWon`), `newAgg`, `touchedAgg` (grouped by `StageName`), `closingAgg`, `meetingsThisWeekAgg`, `meetingsNextWeekAgg`. The team-scope swap above (`scope: MINE` → `OwnerId: { in: [...] }`) applies to the `aggregate {}` roots too.
++
++**Grouping fallback — only if the aggregate read errors.** `closedAgg` groups on `IsWon` and `touchedAgg` on `StageName`; grouping a boolean/picklist throws `DataFetchingException` in some orgs. If the query errors on either grouped root, re-fire just that total as a SOQL `GROUP BY` (own scope shown; team scope → `OwnerId IN (<TEAM_USER_IDS>)`), which groups cleanly:
+␠
+ ```
+ dispatch_readonly(method: "GET", url: "/services/data/v63.0/query",
+@@ -68,7 +73,7 @@
+   queryParams: { "q": "SELECT StageName, COUNT(Id) cnt, SUM(Amount) amt FROM Opportunity WHERE OwnerId = '<CURRENT_USER_ID>' AND IsClosed = false AND LastModifiedDate = THIS_WEEK GROUP BY StageName" })
+ ```
+␠
+-**If the whole combined request returns no usable `data`** — a grouped root's `DataFetchingException` can surface as top-level `errors` with `data` null/absent, taking the other four aggregate roots **and all six detail roots** down with it, not just the grouped total — don't stop at the two SOQL totals. Re-fire the combined request with the two grouped roots removed: keep the six detail `query {}` roots and the four non-grouped `aggregate {}` roots (`newAgg`, `closingAgg`, `meetingsThisWeekAgg`, `meetingsNextWeekAgg`), drop `closedAgg` and `touchedAgg`, then take the closed-by-`IsWon` and touched-by-`StageName` totals from the two SOQL `GROUP BY` calls above. That recovers the detail rows and all six totals without the roots that trigger the exception.
++**If the aggregate request returns no usable `data`**, don't stop at the two SOQL totals. A grouped root's `DataFetchingException` can surface as top-level `errors` with `data` null or absent, which takes the other four aggregate roots down with it. The detail read is a separate dispatch, so its rows are unaffected. Re-fire the aggregate request with `closedAgg` and `touchedAgg` removed, keeping the four non-grouped roots (`newAgg`, `closingAgg`, `meetingsThisWeekAgg`, `meetingsNextWeekAgg`). Then take the closed-by-`IsWon` and touched-by-`StageName` totals from the two SOQL `GROUP BY` calls above. That recovers all six totals without the roots that trigger the exception.
+␠
+ If an aggregate root's `count` exceeds 50, label its paired detail root's rows "Top 50 of `<count>`" in step 3 — never derive the count/$ from the capped detail rows themselves. If an aggregate root errors (and the grouping fallback above doesn't apply or also fails), mark that total unavailable and avoid complete-population wording — do **not** fall back to summing/counting the capped rows.
+␠
+````
 
-- **Upstream:** sends 12 data-fetcher roots in one request; Salesforce rejects it with `ExecutionAborted` before returning data.
-- **Portable:** sends six detail roots and six aggregate roots in separate dispatches, preserving all filters, fields, and aliases.
-- **Impact:** weekly-wrap now executes through real Headless 360 and returns details and totals.
-- **References:** upstream [`weekly-wrap`](../salesforce-for-sales/skills/weekly-wrap/SKILL.md#L52); portable [`weekly-wrap`](../agent-plugin/skills/weekly-wrap/SKILL.md#L52).
+## Current verification snapshot
 
-## Conclusion
+| Check | Result |
+|---|---|
+| `validate` | PASS |
+| Live reads | PASS on `genwatt-demo` |
+| E2E | 155/155; guards 4/4 |
+| Widget parity | 26/26 |
+| Hosted contracts | 26/26 |
+| Ravelin browser | 26/26 with 130/130 semantic checks and 59/59 capture-only actions (39 messages, 20 links) |
 
-The portable conversion preserves the upstream sales workflows and optional connector behavior. The primary deliberate changes are:
-
-1. removing Cowork-only widget delivery as a prerequisite;
-2. enforcing clearer draft-only and manual-write behavior across hosts; and
-3. repairing six concrete execution/data-path gaps: `daily-briefing`, `find-internal-answer`, `forecast-narrative`, `handle-objection`, `lead-triage`, and `weekly-wrap`.
-
-No portable skill newly sends email, posts Slack, or writes Salesforce records.
+Quick remains unverified. The official opaque-origin basic-host and Inspector paths retrieve the App/result but stall while rendering; the separate-origin compatible shim renders successfully. The Ravelin result therefore demonstrates compatible-host behavior, not Quick behavior or success in the opaque-origin paths.

@@ -1,0 +1,421 @@
+{
+  "account-context": {
+    "expectedText": ["Ravelin Rail Logistics", "6 DAYS TO CLOSE", "Ravelin Network Modernization", "Elena Marquez", "Security review blocks the next step"],
+    "values": {
+      "accountName": "Ravelin Rail Logistics",
+      "headerStatus": "6 DAYS TO CLOSE",
+      "recMove": "Get an exec-to-exec CIO security review this week to protect the $1.8M close.",
+      "recMoveMsg": "Draft an executive security-review request for the Ravelin Network Modernization opportunity.",
+      "flag1Title": "Redlines remain open",
+      "flag1Detail": "$1.8M Ravelin Network Modernization closes Jul 30 with legal terms unresolved.",
+      "flag2Title": "Security owner is not confirmed",
+      "flag2Detail": "Nikhil Rao must name the owner and completion date for the questionnaire.",
+      "flag3Title": "Executive alignment is fragile",
+      "flag3Detail": "Elena Marquez supports the deal, but CIO opposition can still block signature.",
+      "totalPipeline": "3 open opportunities · $2.49M",
+      "oppName": "Ravelin Network Modernization",
+      "oppStage": "Negotiation",
+      "oppTiming": "Closes Jul 30",
+      "oppAmount": "$1.8M",
+      "oppUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Opportunity/006bm00000Wn1XLAAZ/view",
+      "blockedTitle": "Security review blocks the next step",
+      "blockedDesc": "Agree the questionnaire owner and redline path before Friday's contract review.",
+      "inlineCtaQuote": "Elena needs one dated owner for legal and security before approval.",
+      "inlineCtaMsg": "Draft a note to Elena Marquez confirming the Ravelin legal and security owners.",
+      "mtRiskTitle": "CIO alignment is the coverage gap",
+      "mtRiskDesc": "Use Elena Marquez to broker an executive meeting with Nikhil Rao this week.",
+      "c1Name": "Elena Marquez",
+      "c1Role": "Chief Financial Officer",
+      "c1RolePill": "Economic buyer",
+      "c1Signal": "Champion",
+      "c1Touch": "Last touch: Jul 23",
+      "c1Note": "Waiting on the ROI model and a dated redline path.",
+      "c2Name": "Nikhil Rao",
+      "c2Role": "Chief Information Officer",
+      "c2RolePill": "Security approver",
+      "c2Signal": "At risk",
+      "c2Touch": "Last touch: Jul 10",
+      "c2Note": "Security questionnaire remains open.",
+      "chipRevenue": "Revenue: $2.1B",
+      "chipIndustry": "Industry: Transportation",
+      "chipEmployees": "Employees: 8,400",
+      "chipLocation": "Location: Chicago, IL",
+      "chipOwner": "Owner: Bill Tarr",
+      "corrPrompt": "Elena requested the ROI model before Friday's contract review.",
+      "mail1Subject": "Ravelin redlines and ROI model",
+      "mail1Date": "Jul 23",
+      "chat1Channel": "#ravelin-deal",
+      "chat1Msg": "Security owner and redline dates are still open.",
+      "chat1Time": "Jul 24"
+    }
+  },
+  "account-tiering": {
+    "expectedText": ["Account tiering — book of 6", "Ravelin Rail Logistics", "Ravelin is the priority expansion account", "$1.07M whitespace", "Build Ravelin expansion plan"],
+    "values": {
+      "title": "Account tiering — book of 6",
+      "subtitle": "Scored on ICP fit × engagement · 2 Tier A, 2 Tier B, 2 Tier C",
+      "heatmapCaption": "Account fit and engagement — top-right deserves investment",
+      "heatmapXLabels": ["Low engage", "Mid engage", "High engage"],
+      "heatmapYLabels": ["High fit", "Mid fit", "Low fit"],
+      "heatmapDomain": [0, 5],
+      "heatmapCells": [{"x": "High engage", "y": "High fit", "value": 5, "valueLabel": "Ravelin"}, {"x": "Mid engage", "y": "High fit", "value": 4, "valueLabel": "Northstar"}, {"x": "Low engage", "y": "Mid fit", "value": 2, "valueLabel": "Calder"}],
+      "piechartCaption": "Book ARR by tier",
+      "piechartCenterLabel": "Live ARR",
+      "piechartCenterValue": "$4.1M",
+      "piechartSlices": [{"label": "Tier A", "value": 2500000, "role": "highlight"}, {"label": "Tier B", "value": 1100000}, {"label": "Tier C", "value": 500000}],
+      "datagridCaption": "Priority accounts, value and motion",
+      "datagridRows": [{"status": {"value": "Invest", "badgeVariant": "success"}, "account": "Ravelin Rail Logistics", "fit": 5, "engage": 82, "arr": 1800000, "white": 1070000, "motion": {"value": "Expand", "badgeVariant": "success"}}, {"status": {"value": "Develop", "badgeVariant": "info"}, "account": "Northstar Intermodal", "fit": 4, "engage": 68, "arr": 900000, "white": 450000, "motion": {"value": "Grow", "badgeVariant": "info"}}],
+      "calloutTitle": "Ravelin is the priority expansion account",
+      "calloutDescription": "$1.8M live ARR and $1.07M whitespace make Ravelin the clearest investment this quarter.",
+      "primaryButtonLabel": "Build Ravelin expansion plan",
+      "primaryButtonMsg": "Draft an account expansion plan for Ravelin Rail Logistics focused on Yard Operations Analytics and Finance Data Cloud.",
+      "salesforceUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Account/001bm00000Wn1XLAAZ/view"
+    }
+  },
+  "calendar-events": {
+    "expectedText": ["Today — Friday, Jul 24", "Ravelin contract review", "Prep now", "The 9:00 Ravelin review needs prep", "Draft Ravelin agenda"],
+    "values": {
+      "title": "Today — Friday, Jul 24",
+      "subtitle": "4 meetings · 3 deal-linked · 3 external · first at 9:00, last ends 4:30",
+      "datagridCaption": "Schedule, in order",
+      "datagridRows": [{"status": {"value": "Prep now", "badgeVariant": "error"}, "time": "9:00 AM", "title": "Ravelin contract review", "deal": "Ravelin Network Modernization", "value": 1800000, "prep": {"value": "Redlines ready?", "badgeVariant": "error"}}, {"time": "10:30 AM", "title": "Pipeline sync", "deal": "—", "value": {"value": 0, "display": "—"}, "prep": {"value": "Scoreboard", "badgeVariant": "neutral"}}, {"status": {"value": "Ready", "badgeVariant": "success"}, "time": "1:00 PM", "title": "Northstar solution review", "deal": "Dispatch Expansion", "value": 900000, "prep": {"value": "Deck ready", "badgeVariant": "success"}}],
+      "calloutVariant": "error",
+      "calloutTitle": "The 9:00 Ravelin review needs prep",
+      "calloutDescription": "The $1.8M deal closes in six days and still needs a redline path and security owner.",
+      "primaryButtonLabel": "Draft Ravelin agenda",
+      "primaryButtonMsg": "Draft an agenda for my Ravelin contract review focused on redlines, security ownership, and the Jul 30 close.",
+      "salesforceUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Event/00Ubm00000Wn1XLAAZ/view"
+    }
+  },
+  "call-prep": {
+    "expectedText": ["Call prep — Ravelin renewal review", "Elena Marquez", "Confirm economic buyer", "Technical deep dive", "Draft call agenda"],
+    "values": {
+      "title": "Call prep — Ravelin renewal review",
+      "subtitle": "Today 9:00 · Elena Marquez + Nikhil Rao · $1.8M · Negotiation",
+      "attendeeRows": [{"status": {"value": "Ally", "badgeVariant": "success"}, "name": "Elena Marquez", "role": "CFO · economic buyer", "stance": {"value": "Champion", "badgeVariant": "success"}, "watch": "Needs ROI model and dated redline path"}, {"status": {"value": "Risk", "badgeVariant": "error"}, "name": "Nikhil Rao", "role": "CIO · security approver", "stance": {"value": "Detractor", "badgeVariant": "error"}, "watch": "Will challenge security ownership"}],
+      "topicRows": [{"status": {"value": "Must land", "badgeVariant": "error"}, "topic": "Confirm economic buyer", "state": {"value": "Open", "badgeVariant": "error"}, "ask": "Confirm Elena owns final approval"}, {"status": {"value": "Must land", "badgeVariant": "error"}, "topic": "Technical deep dive", "state": {"value": "Unscheduled", "badgeVariant": "warning"}, "ask": "Name an owner and date"}, {"status": {"value": "Push", "badgeVariant": "warning"}, "topic": "Contract redlines", "state": {"value": "Open", "badgeVariant": "error"}, "ask": "Agree the path by Friday"}],
+      "calloutTitle": "Leave with one dated legal and security plan",
+      "calloutDesc": "Success means Elena and Nikhil agree who owns every redline and the questionnaire before Jul 30.",
+      "ctaLabel": "Draft call agenda",
+      "ctaMsg": "Draft a Ravelin renewal-review agenda focused on economic-buyer confirmation, security ownership, and contract redlines.",
+      "oppUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Opportunity/006bm00000Wn1XLAAZ/view"
+    }
+  },
+  "close-plan": {
+    "expectedText": ["Mutual close plan — Ravelin Rail Logistics", "6 DAYS OUT", "Confirm economic buyer", "Decision path is not fully mapped", "Draft close-plan note"],
+    "values": {
+      "planTitle": "Mutual close plan — Ravelin Rail Logistics",
+      "headerStatus": "6 DAYS OUT",
+      "subtitle": "$1.8M · Negotiation · target close Jul 30, 2026",
+      "progressValue": 62,
+      "progressMax": 100,
+      "progressTarget": 100,
+      "progressValueLabel": "62% of close path complete",
+      "progressTargetLabel": "100% ready to sign",
+      "progressStatus": "legal and security open",
+      "progressBands": [{"from": 0, "to": 50, "variant": "error", "label": "At risk"}, {"from": 50, "to": 80, "variant": "warning", "label": "In progress"}, {"from": 80, "to": 100, "variant": "success", "label": "Ready"}],
+      "pathRows": [{"status": {"value": "Open", "badgeVariant": "error"}, "step": "Confirm economic buyer", "owner": "Elena Marquez", "due": "2026-07-24", "side": {"value": "Customer", "badgeVariant": "info"}, "state": {"value": "Open", "badgeVariant": "error"}}, {"status": {"value": "Open", "badgeVariant": "error"}, "step": "Assign security questionnaire", "owner": "Nikhil Rao", "due": "2026-07-25", "side": {"value": "Customer", "badgeVariant": "info"}, "state": {"value": "Open", "badgeVariant": "error"}}, {"status": {"value": "Due", "badgeVariant": "warning"}, "step": "Resolve contract redlines", "owner": "Bill Tarr", "due": "2026-07-27", "side": {"value": "Seller", "badgeVariant": "neutral"}, "state": {"value": "In progress", "badgeVariant": "warning"}}],
+      "calloutTitle": "Decision path is not fully mapped",
+      "calloutDesc": "Economic-buyer confirmation and security ownership must land before the Jul 30 signature.",
+      "ctaLabel": "Draft close-plan note",
+      "ctaMsg": "Draft a mutual close-plan note for Ravelin with dated legal, security, and approval owners.",
+      "oppUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Opportunity/006bm00000Wn1XLAAZ/view"
+    }
+  },
+  "customer-health": {
+    "expectedText": ["Account health — Ravelin Rail Logistics", "AT RISK", "Down 28% in six weeks", "Renewal is at risk", "Draft executive review"],
+    "values": {
+      "headerTitle": "Account health — Ravelin Rail Logistics",
+      "headerStatus": "AT RISK",
+      "headerSubtitle": "$1.8M ARR · renews in 63 days · health 58, down 14 points",
+      "chartCaption": "Weekly dispatch users — 6-week slide from 612 to 438",
+      "chartCategories": ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6"],
+      "chartSeries": [{"name": "Dispatch users", "data": [612, 590, 556, 521, 477, 438]}],
+      "meterValue": 58,
+      "meterTarget": 75,
+      "meterValueLabel": "58 / 100",
+      "meterTargetLabel": "75 healthy",
+      "meterStatus": "at risk",
+      "meterBands": [{"from": 0, "to": 50, "variant": "error", "label": "Critical"}, {"from": 50, "to": 75, "variant": "warning", "label": "At risk"}, {"from": 75, "to": 100, "variant": "success", "label": "Healthy"}],
+      "gridCaption": "Health signals, worst first",
+      "gridRows": [{"status": {"value": "Declining", "badgeVariant": "error"}, "signal": "Weekly dispatch users", "now": "438", "trend": [612, 590, 556, 521, 477, 438], "note": "Down 28% in six weeks"}, {"status": {"value": "Open", "badgeVariant": "error"}, "signal": "Security review", "now": "1 blocker", "trend": [0, 0, 1, 1, 1, 1], "note": "CIO owner is not confirmed"}, {"status": {"value": "Cold", "badgeVariant": "warning"}, "signal": "Executive touches", "now": "1 / 60d", "trend": [2, 2, 1, 1, 1, 1], "note": "CFO is the only active executive"}],
+      "calloutTitle": "Renewal is at risk — reset CIO confidence now",
+      "calloutDescription": "Usage is down 28% and the security review is open with renewal 63 days away.",
+      "ctaPrimaryLabel": "Draft executive review",
+      "ctaPrimaryMsg": "Draft an executive business review for Ravelin focused on usage recovery and security ownership.",
+      "accountUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Account/001bm00000Wn1XLAAZ/view"
+    }
+  },
+  "daily-briefing": {
+    "expectedText": ["Good morning, Bill", "Lock Ravelin's redline path before 9:00", "Ravelin contract review", "Elena Marquez — send the ROI model", "Ravelin Network Modernization"],
+    "values": {
+      "dateEyebrow": "FRIDAY · JUL 24",
+      "briefingTitle": "Good morning, Bill",
+      "topMove": "Lock Ravelin's redline path before 9:00",
+      "topMoveDetail": "Ravelin Network Modernization is $1.8M, closes in six days, and still has legal and security work open.",
+      "topMoveDraftMsg": "Draft the next-step note for Ravelin covering redlines, security ownership, and the Jul 30 close.",
+      "kpiEventsLine": "4 meetings", "kpiEventsSub": "3 external · first at 9:00",
+      "kpiPipelineLine": "$3.3M closing", "kpiPipelineSub": "3 opportunities in 14 days",
+      "kpiGapsLine": "2 opps", "kpiGapsSub": "missing a dated next step",
+      "kpiFollowupsLine": "2 promises", "kpiFollowupsSub": "ROI model and security owner",
+      "flag1Title": "Ravelin redlines are still open", "flag1Sub": "$1.8M closes Jul 30", "flag1Msg": "Draft a dated redline follow-up for Ravelin.",
+      "flag2Title": "Elena still needs the ROI model", "flag2Sub": "CFO review is today", "flag2Msg": "Draft a note to Elena with the Ravelin ROI model.",
+      "flag3Title": "Security ownership is unconfirmed", "flag3Sub": "Nikhil Rao must name an owner", "flag3Msg": "Draft a security-owner request to Nikhil Rao.",
+      "flag4Title": "Renewal usage is declining", "flag4Sub": "Dispatch users fell from 612 to 438",
+      "meetingsHeading": "Today's meetings — 4, 3 external",
+      "meeting1Time": "9:00 AM", "meeting1Title": "Ravelin contract review · $1.8M · closes Jul 30", "meeting1Ask": "Agree who owns every redline and the security questionnaire.",
+      "meeting2Time": "1:00 PM", "meeting2Title": "Northstar solution review · $900K", "meeting2Ask": "Confirm the Dispatch Expansion decision process.",
+      "meeting3Line": "3:00 PM · pipeline sync · internal", "meeting4Line": "4:00 PM · Harborline terminal review · $700K",
+      "oweHeading": "You owe — 2 follow-ups",
+      "owe1Title": "Elena Marquez — send the ROI model", "owe1Meta": "Promised Jul 23 · Ravelin Rail Logistics", "owe1Msg": "Draft the ROI-model follow-up to Elena Marquez.",
+      "owe2Title": "Nikhil Rao — confirm security owner", "owe2Meta": "Due today · Ravelin Rail Logistics", "owe2Msg": "Draft the security ownership request to Nikhil Rao.",
+      "inboxClear": "No other urgent customer replies",
+      "oppsSummary": "3 closing soon · 1 past due",
+      "closingLabel": "Closing in 14 days — 3 opps, $3.3M",
+      "pastDueLabel": "Past due — 1 opp, $220K",
+      "gridColumns": [{"key": "name", "header": "Opportunity", "type": "text"}, {"key": "stage", "header": "Stage", "type": "text"}, {"key": "trend", "header": "Trend", "type": "sparkline"}, {"key": "close", "header": "Close", "type": "text"}, {"key": "amount", "header": "Amount", "type": "currency"}, {"key": "next", "header": "Next step", "type": "text"}],
+      "closingRows": [{"name": "Ravelin Rail Logistics — Ravelin Network Modernization", "stage": "Negotiation", "trend": [62, 64, 61, 58, 55, 52], "close": "Jul 30 · 6d", "amount": 1800000, "next": "Resolve redlines and security owner", "_tone": "error"}, {"name": "Northstar Intermodal — Dispatch Expansion", "stage": "Proposal", "trend": [40, 45, 51, 55, 58, 62], "close": "Aug 4 · 11d", "amount": 900000, "next": "Confirm decision process"}],
+      "pastDueRows": [{"name": "Harborline Cargo — Fleet Integration", "stage": "Proposal", "trend": [52, 48, 44, 40, 35, 30], "close": "Jul 20 · 4d past", "amount": 220000, "next": "Reset close date", "_tone": "warning"}]
+    }
+  },
+  "deal-advance-gap": {
+    "expectedText": ["What's needed to advance — Ravelin Network Modernization", "6 DAYS TO CLOSE", "Confirm economic buyer", "Schedule technical deep dive", "Draft action plan"],
+    "values": {
+      "headerTitle": "What's needed to advance — Ravelin Network Modernization",
+      "headerStatus": "6 DAYS TO CLOSE",
+      "headerSubtitle": "Negotiation → Closed Won · $1.8M · Jul 30",
+      "meterValue": 2, "meterMax": 5, "meterTarget": 5,
+      "meterValueLabel": "2 of 5 exit criteria met", "meterTargetLabel": "5 required", "meterStatus": "3 gaps",
+      "meterBands": [{"from": 0, "to": 2, "variant": "error", "label": "Blocked"}, {"from": 2, "to": 4, "variant": "warning", "label": "Progress"}, {"from": 4, "to": 5, "variant": "success", "label": "Ready"}],
+      "gridCaption": "Exit criteria and owners",
+      "gridRows": [{"status": {"value": "Gap", "badgeVariant": "error"}, "item": "Confirm economic buyer", "owner": "Elena Marquez", "due": "2026-07-24", "state": {"value": "Open", "badgeVariant": "error"}}, {"status": {"value": "Gap", "badgeVariant": "error"}, "item": "Schedule technical deep dive", "owner": "Nikhil Rao", "due": "2026-07-25", "state": {"value": "Open", "badgeVariant": "error"}}, {"status": {"value": "Gap", "badgeVariant": "warning"}, "item": "Resolve contract redlines", "owner": "Bill Tarr", "due": "2026-07-27", "state": {"value": "In progress", "badgeVariant": "warning"}}],
+      "calloutTitle": "Three gaps block the Jul 30 close",
+      "calloutDescription": "Economic-buyer confirmation, technical ownership, and redlines need dated owners now.",
+      "ctaPrimaryLabel": "Draft action plan",
+      "ctaPrimaryMsg": "Draft a Ravelin action plan with dated owners for economic-buyer confirmation, technical review, and redlines.",
+      "oppUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Opportunity/006bm00000Wn1XLAAZ/view"
+    }
+  },
+  "deal-review": {
+    "expectedText": ["Ravelin Network Modernization", "6 DAYS TO CLOSE", "Health 4/10", "Paper process", "Decision path is not fully mapped"],
+    "values": {
+      "dealName": "Ravelin Network Modernization", "headerStatus": "6 DAYS TO CLOSE",
+      "healthLine": "🟡 Health 4/10 — strong economics, but security and paper process threaten Jul 30",
+      "recMove": "Get legal and security owners aligned today", "recMoveDetail": "Redlines and the questionnaire remain open with six days to close.",
+      "recMoveMsg": "Draft a legal push for the Ravelin redlines by end of day.", "recMoveChampMsg": "Draft a note asking Elena Marquez to broker CIO alignment.", "recMoveOpenMsg": "Open the Ravelin Network Modernization opportunity and summarize it.",
+      "kpiAmountNum": "$1.8M", "kpiAmountSub": "Negotiation", "kpiStageNum": "05", "kpiStageLabel": "Negotiation", "kpiStageSub": "1 stage to close",
+      "kpiCloseNum": "6", "kpiCloseUnit": "days", "kpiCloseSub": "Jul 30, 2026", "kpiQualNum": "3", "kpiQualUnit": "of 6", "kpiQualSub": "MEDDIC met",
+      "qualBadge": "3 gaps", "qualCaption": "MEDDIC qualification — gaps block commit",
+      "qualRows": [{"status": {"value": "Met", "badgeVariant": "success"}, "crit": "Metrics", "state": {"value": "Confirmed", "badgeVariant": "success"}, "detail": "18% dispatch cost reduction"}, {"status": {"value": "Gap", "badgeVariant": "error"}, "crit": "Paper process", "state": {"value": "Missing", "badgeVariant": "error"}, "detail": "Redlines remain open"}, {"status": {"value": "Gap", "badgeVariant": "error"}, "crit": "Economic buyer", "state": {"value": "Unconfirmed", "badgeVariant": "error"}, "detail": "Elena supports but final authority is not recorded"}],
+      "dealAccount": "Ravelin Rail Logistics", "dealStage": "Negotiation", "dealTiming": "Closes in 6 days", "dealAmount": "$1.8M",
+      "dealUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Opportunity/006bm00000Wn1XLAAZ/view",
+      "blockerTitle": "Decision path is not fully mapped", "blockerDesc": "Security and legal ownership must be dated before signature."
+    }
+  },
+  "deal-signals": {
+    "expectedText": ["Deal signals — Ravelin Rail Logistics", "WATCH", "$1.8M", "Single-threading risk", "Confirm the decision path this week"],
+    "values": {
+      "title": "Deal signals — Ravelin Rail Logistics", "headerStatus": "WATCH", "subtitle": "Signal score 52 / 100 · trending down · 1 positive, 3 warnings",
+      "dealContext": "Negotiation · $1.8M · close Jul 30 · next: resolve redlines · last activity Jul 23",
+      "chartCaption": "Signal score, last 6 weeks", "chartCategories": ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6"], "chartSeries": [{"name": "Score", "data": [68, 66, 63, 59, 55, 52]}],
+      "meterLabel": "Composite signal score", "meterValue": 52, "meterMax": 100, "meterTarget": 70, "meterValueLabel": "52 / 100", "meterTargetLabel": "70 = strong", "meterStatus": "watch",
+      "meterBands": [{"from": 0, "to": 40, "variant": "error", "label": "Cold"}, {"from": 40, "to": 70, "variant": "warning", "label": "Warm"}, {"from": 70, "to": 100, "variant": "success", "label": "Hot"}],
+      "datagridCaption": "Signals detected, strongest first",
+      "datagridRows": [{"status": {"value": "Watch", "badgeVariant": "warning"}, "signal": "Single-threading risk", "dir": {"value": "Watch", "badgeVariant": "warning"}, "when": "2026-07-24", "note": "Only Elena is actively supporting the close"}, {"status": {"value": "Watch", "badgeVariant": "warning"}, "signal": "Security owner missing", "dir": {"value": "Watch", "badgeVariant": "warning"}, "when": "2026-07-23", "note": "Nikhil has not assigned the questionnaire"}],
+      "calloutTitle": "Confirm the decision path this week", "calloutDescription": "CFO support is positive, but CIO and legal ownership remain unresolved.",
+      "primaryButtonLabel": "Draft executive ask", "primaryButtonContent": "Draft an executive ask for Ravelin focused on CIO security ownership and legal redlines.",
+      "oppUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Opportunity/006bm00000Wn1XLAAZ/view"
+    }
+  },
+  "deal-slip-scenario": {
+    "expectedText": ["Slip scenario — Ravelin Network Modernization", "WOULD MISS", "$382K", "Ravelin Network Modernization", "Save the Ravelin deal first"],
+    "values": {
+      "title": "Slip scenario — Ravelin Network Modernization", "headerStatus": "WOULD MISS", "subtitle": "If Ravelin slips, commit falls from $420K to $382K",
+      "meterLabel": "Commit after slip", "meterValue": 382, "meterMax": 500, "meterTarget": 500, "meterValueLabel": "$382K · 76% of quota", "meterTargetLabel": "$500K quota", "meterStatus": "$118K short",
+      "meterBands": [{"from": 0, "to": 400, "variant": "error", "label": "Miss"}, {"from": 400, "to": 475, "variant": "warning", "label": "Close"}, {"from": 475, "to": 500, "variant": "success", "label": "Made"}],
+      "waterfallCaption": "Commit impact if Ravelin slips", "waterfallStart": {"label": "Commit today", "value": 420000}, "waterfallSteps": [{"label": "Ravelin slip", "delta": -38000}], "waterfallEnd": {"label": "Commit after slip"},
+      "datagridCaption": "Deals in the downside scenario", "datagridRows": [{"status": {"value": "Slips", "badgeVariant": "error"}, "deal": "Ravelin Network Modernization", "amount": 38000, "close": "2026-10-20", "prob": 65, "block": "Security owner and redlines"}],
+      "calloutTitle": "Save the Ravelin deal first", "calloutDescription": "A dated security and legal path protects $38K of commit.",
+      "primaryButtonLabel": "Draft save plan", "primaryButtonContent": "Draft a save plan for the Ravelin renewal.", "secondaryButtonLabel": "Model recovery options", "secondaryButtonContent": "Model recovery options if Ravelin slips."
+    }
+  },
+  "draft-outreach": {
+    "expectedText": ["Outreach — Elena Marquez", "WARM FOLLOW-UP", "Ravelin Network Modernization", "Ravelin redlines + ROI model", "Revise the draft"],
+    "values": {
+      "draftTitle": "Outreach — Elena Marquez, CFO @ Ravelin Rail Logistics", "intentBadge": "WARM FOLLOW-UP", "draftSubtitle": "Existing account · last thread 2 days ago · hook: redlines and ROI model",
+      "contextRows": [{"source": {"value": "CRM", "badgeVariant": "info"}, "detail": "Ravelin Network Modernization · $1.8M · Negotiation · closes Jul 30"}, {"source": {"value": "Email", "badgeVariant": "success"}, "detail": "Elena asked for the ROI model before legal sign-off"}, {"source": {"value": "Meeting", "badgeVariant": "neutral"}, "detail": "Contract review booked Friday at 9:00 AM"}],
+      "subject": "Ravelin redlines + ROI model", "emailBody": "Elena — I have the ROI model ready. For Friday's session, I'd like to leave with one owner and date for every redline and the security questionnaire so Jul 30 stays realistic.",
+      "reviseLabel": "Revise the draft", "reviseMsg": "Revise this Ravelin note to be shorter and more direct.",
+      "draftUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Opportunity/006bm00000Wn1XLAAZ/view"
+    }
+  },
+  "expansion-whitespace": {
+    "expectedText": ["Expansion whitespace — Ravelin Rail Logistics", "$1.07M whitespace", "Analytics for Yard Ops", "Warm intro", "Start with Yard Operations analytics"],
+    "values": {
+      "title": "Expansion whitespace — Ravelin Rail Logistics", "subtitle": "$1.8M live · $1.07M whitespace across 4 products and 3 business units",
+      "heatmapCaption": "Product adoption by business unit — empty cells are whitespace", "heatmapXLabels": ["Platform", "Analytics", "Data Cloud", "Service"], "heatmapYLabels": ["Yard Ops", "Finance", "Fleet IT"], "heatmapDomain": [0, 800000],
+      "heatmapCells": [{"x": "Platform", "y": "Yard Ops", "value": 800000, "valueLabel": "$800K"}, {"x": "Platform", "y": "Finance", "value": 500000, "valueLabel": "$500K"}, {"x": "Service", "y": "Fleet IT", "value": 500000, "valueLabel": "$500K"}],
+      "piechartCaption": "Live ARR by product", "piechartCenterLabel": "Live ARR", "piechartCenterValue": "$1.8M", "piechartSlices": [{"label": "Platform", "value": 1300000, "role": "highlight"}, {"label": "Service", "value": 500000}],
+      "datagridCaption": "Top expansion plays, ranked by fit and reachable ARR", "datagridRows": [{"status": {"value": "Ready", "badgeVariant": "success"}, "play": "Analytics for Yard Ops", "unit": "Yard Ops", "fit": 5, "arr": 650000, "motion": {"value": "Warm intro", "badgeVariant": "success"}}, {"status": {"value": "Qualify", "badgeVariant": "info"}, "play": "Data Cloud for Finance", "unit": "Finance", "fit": 4, "arr": 420000, "motion": {"value": "Discovery", "badgeVariant": "info"}}],
+      "calloutTitle": "Start with Yard Operations analytics", "calloutDescription": "Avery can introduce Yard Operations into a $650K analytics expansion.", "primaryButtonLabel": "Draft Ravelin expansion plan", "primaryButtonContent": "Draft a Ravelin expansion plan for Yard Operations Analytics and Finance Data Cloud.",
+      "accountUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Account/001bm00000Wn1XLAAZ/view"
+    }
+  },
+  "forecast-narrative": {
+    "expectedText": ["Q3 forecast — Bill Tarr", "84% TO QUOTA", "Commit $420K", "Ravelin Network Modernization", "Ravelin is the clearest commit risk"],
+    "values": {
+      "title": "Q3 forecast — Bill Tarr", "headerStatus": "84% TO QUOTA", "subtitle": "Commit $420K against $500K quota · Ravelin is the swing deal",
+      "meterLabel": "Commit vs quota", "meterValue": 420, "meterMax": 500, "meterTarget": 500, "meterValueLabel": "$420K commit · 84% of quota", "meterTargetLabel": "$500K quota", "meterStatus": "$80K gap",
+      "meterBands": [{"from": 0, "to": 400, "variant": "error", "label": "Short"}, {"from": 400, "to": 475, "variant": "warning", "label": "Close"}, {"from": 475, "to": 500, "variant": "success", "label": "Made"}],
+      "waterfallCaption": "How the forecast builds", "waterfallStart": {"label": "Closed", "value": 220000}, "waterfallSteps": [{"label": "Commit", "delta": 200000}, {"label": "Best case", "delta": 180000}], "waterfallEnd": {"label": "Pipeline"},
+      "datagridCaption": "Commit and best-case deals", "datagridRows": [{"status": {"value": "At risk", "badgeVariant": "warning"}, "name": "Ravelin Network Modernization", "amount": 1800000, "prob": 65, "close": "2026-07-30", "call": {"value": "Commit", "badgeVariant": "warning"}}, {"name": "Northstar Dispatch Expansion", "amount": 900000, "prob": 45, "close": "2026-08-04", "call": {"value": "Best Case", "badgeVariant": "info"}}],
+      "calloutTitle": "Ravelin is the clearest commit risk", "calloutDescription": "The decision path and security owner are unconfirmed six days before close.",
+      "primaryButtonLabel": "Draft forecast note", "primaryButtonContent": "Draft a forecast note explaining the Ravelin commit risk.", "secondaryButtonLabel": "Model Ravelin slip", "secondaryButtonContent": "Model the forecast if Ravelin slips."
+    }
+  },
+  "inbox-sweep": {
+    "expectedText": ["Inbox sweep — 4 items need a reply", "Elena Marquez", "contract redlines", "Clear the two Ravelin threads first", "Draft both Ravelin replies"],
+    "values": {
+      "headerTitle": "Inbox sweep — 4 items need a reply", "headerSubtitle": "Prioritized by value and urgency · 2 tied to Ravelin closing this week", "totalRows": 4,
+      "queueRows": [{"status": {"value": "Now", "badgeVariant": "error"}, "from": "Elena Marquez", "subject": "Re: contract redlines", "deal": "Ravelin Network Modernization", "value": 1800000, "wait": {"value": "2 hours", "badgeVariant": "error"}, "action": "Send ROI model and propose redline owners"}, {"status": {"value": "Now", "badgeVariant": "error"}, "from": "Nikhil Rao", "subject": "Security questionnaire", "deal": "Ravelin Network Modernization", "value": 1800000, "wait": {"value": "5 hours", "badgeVariant": "error"}, "action": "Confirm questionnaire owner"}, {"status": {"value": "Today", "badgeVariant": "warning"}, "from": "Priya Nair", "subject": "Northstar review", "deal": "Dispatch Expansion", "value": 900000, "wait": {"value": "1 day", "badgeVariant": "warning"}, "action": "Confirm agenda"}],
+      "calloutTitle": "Clear the two Ravelin threads first", "calloutDescription": "Both messages block the $1.8M deal closing in six days.",
+      "ctaPrimaryLabel": "Draft both Ravelin replies", "ctaPrimaryMsg": "Draft replies to Elena and Nikhil covering the ROI model, redlines, and security owner.",
+      "salesforceUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/o/Opportunity/list"
+    }
+  },
+  "lead-triage": {
+    "expectedText": ["Lead triage — 12 new leads this week", "Elena Marquez", "Ravelin Rail Logistics", "Ravelin requested pricing", "Draft Ravelin outreach"],
+    "values": {
+      "headerTitle": "Lead triage — 12 new leads this week", "headerSubtitle": "Scored by fit and intent · 3 hot, 4 warm, 5 nurture", "centerValue": "12",
+      "slices": [{"label": "Hot", "value": 3, "role": "highlight"}, {"label": "Warm", "value": 4}, {"label": "Nurture", "value": 5}],
+      "donutAsideTitle": "Tier breakdown", "donutAside": "Three of 12 leads are hot, four are warm, and five need nurture before sales follow-up.",
+      "chartAsideTitle": "Where leads originate", "chartAside": "Inbound demo produced the highest-intent Ravelin request; referrals and events fill the remaining queue.",
+      "categories": ["Inbound demo", "Referral", "Event", "Content"], "series": [{"name": "Leads", "data": [4, 3, 3, 2]}], "totalRows": 12,
+      "hotRows": [{"status": {"value": "Hot", "badgeVariant": "success"}, "lead": "Elena Marquez", "co": "Ravelin Rail Logistics", "score": 94, "src": {"value": "Inbound demo", "badgeVariant": "success"}, "next": "Call today — requested network analytics pricing"}, {"status": {"value": "Hot", "badgeVariant": "success"}, "lead": "Owen Price", "co": "Northstar Intermodal", "score": 86, "src": {"value": "Referral", "badgeVariant": "success"}, "next": "Warm introduction"}],
+      "calloutTitle": "Ravelin requested pricing — respond today", "calloutDescription": "Elena's score is 94 and the request names a funded modernization program.",
+      "ctaPrimaryLabel": "Draft Ravelin outreach", "ctaPrimaryMsg": "Draft same-day outreach to Elena Marquez about Ravelin's network analytics pricing request.",
+      "salesforceUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/o/Lead/list"
+    }
+  },
+  "pipeline-review": {
+    "expectedText": ["Pipeline review — Bill Tarr", "$3.7M open", "Ravelin Network Modernization", "Friday focus: unblock Ravelin", "Draft Elena follow-up"],
+    "values": {
+      "pageTitle": "Pipeline review — Bill Tarr", "pageSubtitle": "$3.7M open across 4 opps · weighted $1.6M · closes this quarter",
+      "chartCaption": "Open pipeline by stage; largest at Negotiation", "chartCategories": ["Qualification", "Proposal", "Negotiation", "Closing"], "chartSeries": [{"name": "Open $", "data": [600000, 900000, 1800000, 400000]}],
+      "coverageValue": 2.3, "coverageMax": 5, "coverageTarget": 3, "coverageValueLabel": "2.3× open pipeline to $1.6M gap", "coverageTargetLabel": "3.0× target", "coverageStatus": "under-covered", "coverageBands": [{"from": 0, "to": 3, "variant": "warning", "label": "Under"}, {"from": 3, "to": 5, "variant": "success", "label": "Covered"}],
+      "datagridCaption": "At-risk opportunities", "datagridRows": [{"status": {"value": "At risk", "badgeVariant": "error"}, "name": "Ravelin Network Modernization", "stage": {"value": "Negotiation", "badgeVariant": "warning"}, "amount": 1800000, "age": 22, "close": "2026-07-30", "risk": "Redlines and security owner unresolved"}, {"status": {"value": "Stalled", "badgeVariant": "warning"}, "name": "Northstar Dispatch Expansion", "stage": {"value": "Proposal", "badgeVariant": "info"}, "amount": 900000, "age": 31, "close": "2026-08-04", "risk": "Decision process incomplete"}],
+      "calloutVariant": "info", "calloutTitle": "Friday focus: unblock Ravelin", "calloutDescription": "Confirm the legal and security owners before the $1.8M close enters its final week.",
+      "primaryButtonLabel": "Draft Elena follow-up", "primaryButtonMsg": "Draft a follow-up to Elena Marquez on the Ravelin redline and security path.",
+      "viewOppsUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/o/Opportunity/list"
+    }
+  },
+  "query-activity-history": {
+    "expectedText": ["Activity history — Ravelin Rail Logistics", "12 touches", "Elena Marquez", "Reviewed contract redlines", "Engaged, but legal is now critical"],
+    "values": {
+      "pageTitle": "Activity history — Ravelin Rail Logistics", "pageSubtitle": "Last 90 days · 12 touches · last contact 1 day ago",
+      "heatmapCaption": "Touch cadence — last 12 weeks", "heatmapDomain": [0, 3], "heatmapDays": [{"date": "2026-07-23", "value": 3}, {"date": "2026-07-16", "value": 2}, {"date": "2026-07-10", "value": 1}],
+      "datagridCaption": "Recent account activity", "datagridTotalRows": 12,
+      "datagridRows": [{"date": "2026-07-23", "type": {"value": "Meeting", "badgeVariant": "info"}, "who": "Elena Marquez", "note": "Reviewed contract redlines and agreed Friday follow-up"}, {"date": "2026-07-22", "type": {"value": "Email", "badgeVariant": "neutral"}, "who": "Nikhil Rao", "note": "Security questionnaire owner still pending"}],
+      "calloutVariant": "warning", "calloutTitle": "Engaged, but legal is now critical", "calloutDescription": "Ravelin has recent activity, but every touch must now close a legal or security gap.",
+      "primaryButtonLabel": "Draft legal follow-up", "primaryButtonMsg": "Draft a legal follow-up for the Ravelin contract review.",
+      "viewRecordUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Account/001bm00000Wn1XLAAZ/view"
+    }
+  },
+  "renewal-radar": {
+    "expectedText": ["Renewal radar — next 90 days", "$1.8M AT RISK", "Ravelin Rail Logistics", "critical renewal this quarter", "Draft save plan"],
+    "values": {
+      "pageTitle": "Renewal radar — next 90 days", "headerStatus": "$1.8M AT RISK", "subtitle": "$5.6M ARR across 7 renewals · $1.8M at risk · 1 needs attention now",
+      "riskValue": 32, "riskTarget": 15, "riskValueLabel": "32% of renewal ARR at risk", "riskTargetLabel": "15% target", "riskStatus": "above risk target", "riskBands": [{"from": 0, "to": 15, "variant": "success", "label": "Healthy"}, {"from": 15, "to": 25, "variant": "warning", "label": "Watch"}, {"from": 25, "to": 100, "variant": "error", "label": "At risk"}],
+      "pieCenter": "$5.6M", "pieSlices": [{"label": "Healthy", "value": 2800000}, {"label": "Watch", "value": 1000000}, {"label": "At risk", "value": 1800000, "role": "highlight"}], "totalRenewals": 7,
+      "gridRows": [{"status": {"value": "Critical", "badgeVariant": "error"}, "account": "Ravelin Rail Logistics", "arr": 1800000, "close": "2026-09-25", "usage": [612, 590, 556, 521, 477, 438], "verdict": {"value": "At risk", "badgeVariant": "error"}, "action": "Executive save plan — usage down 28%"}, {"status": {"value": "Watch", "badgeVariant": "warning"}, "account": "Northstar Intermodal", "arr": 900000, "close": "2026-10-05", "usage": [410, 405, 399, 390, 382, 375], "verdict": {"value": "Watch", "badgeVariant": "warning"}, "action": "Confirm sponsor"}],
+      "synthTitle": "Ravelin Rail Logistics is the critical renewal this quarter", "synthDescription": "Usage is down 28% and CIO confidence needs an executive reset.",
+      "primaryLabel": "Draft save plan", "primaryPrompt": "Draft an executive renewal save plan for Ravelin Rail Logistics.",
+      "criticalRenewalsUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/o/Opportunity/list"
+    }
+  },
+  "rep-context": {
+    "expectedText": ["Rep snapshot — Bill Tarr", "BEHIND PACE", "Ravelin Rail Logistics", "Ravelin is the swing deal", "Unstick Ravelin deal"],
+    "values": {
+      "pageTitle": "Rep snapshot — Bill Tarr", "headerStatus": "BEHIND PACE", "subtitle": "Q3 · $820K closed of $2.0M plan · 41% to plan",
+      "chartCategories": ["Q4", "Q1", "Q2", "Q3"], "chartSeries": [{"name": "Attainment", "data": [104, 98, 71, 41]}],
+      "pieCenter": "$3.0M", "pieSlices": [{"label": "Negotiation", "value": 1800000, "role": "highlight"}, {"label": "Proposal", "value": 900000}, {"label": "Discovery", "value": 300000}],
+      "gridRows": [{"status": {"value": "Coach", "badgeVariant": "warning"}, "deal": "Ravelin Rail Logistics", "amount": 1800000, "stage": {"value": "Negotiation", "badgeVariant": "warning"}, "age": 22, "next": "Get redlines and security owner by Jul 25"}, {"deal": "Northstar Intermodal", "amount": 900000, "stage": {"value": "Proposal", "badgeVariant": "info"}, "age": 14, "next": "Confirm decision process"}],
+      "synthTitle": "Ravelin is the swing deal", "synthDescription": "Bill's attainment and thin coverage make the $1.8M Ravelin path decisive.",
+      "primaryLabel": "Draft pipeline plan", "primaryPrompt": "Draft Bill's pipeline plan for the remaining quarter.", "secondaryLabel": "Unstick Ravelin deal", "secondaryPrompt": "Draft an unblock plan for Ravelin legal and security."
+    }
+  },
+  "research-prospect": {
+    "expectedText": ["Prospect brief — Ravelin Rail Logistics", "STRONG FIT", "$320M intermodal modernization", "Lead with intermodal modernization", "Draft first-touch note"],
+    "values": {
+      "prospectTitle": "Prospect brief — Ravelin Rail Logistics", "fitStatus": "STRONG FIT", "prospectSubtitle": "Rail freight and logistics · 8,400 employees · $2.1B revenue · strong ICP fit",
+      "icpValue": 91, "icpTarget": 70, "icpValueLabel": "91 / 100 ICP fit", "icpTargetLabel": "70 target", "icpStatus": "strong fit", "icpBands": [{"from": 0, "to": 50, "variant": "error", "label": "Weak"}, {"from": 50, "to": 70, "variant": "warning", "label": "Possible"}, {"from": 70, "to": 100, "variant": "success", "label": "Strong"}],
+      "signalRows": [{"status": {"value": "Buy", "badgeVariant": "success"}, "topic": "Modernization budget", "tag": {"value": "Opportunity", "badgeVariant": "success"}, "note": "$320M intermodal modernization — budget and executive mandate are active"}, {"status": {"value": "Fit", "badgeVariant": "info"}, "topic": "Data hiring", "tag": {"value": "Signal", "badgeVariant": "info"}, "note": "24 open data-engineering roles"}, {"status": {"value": "Watch", "badgeVariant": "warning"}, "topic": "New CIO", "tag": {"value": "Obstacle", "badgeVariant": "warning"}, "note": "Security posture is under review"}],
+      "synthTitle": "Lead with intermodal modernization and the new CIO", "synthDetail": "Tie network analytics to the funded program and offer an executive security discussion.",
+      "ctaLabel": "Draft first-touch note", "ctaMsg": "Draft prospecting outreach to Elena Marquez at Ravelin about network analytics and the modernization program.",
+      "prospectUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Account/001bm00000Wn1XLAAZ/view"
+    }
+  },
+  "salesforce-hygiene-check": {
+    "expectedText": ["Pipeline hygiene — Bill Tarr", "5 OPEN OPPS", "Ravelin Network Modernization", "Ravelin cannot wait", "Draft fix plan"],
+    "values": {
+      "hygieneTitle": "Pipeline hygiene — Bill Tarr", "oppCountBadge": "5 OPEN OPPS", "hygieneSubtitle": "5 open opps · 1 critical, 2 need attention, 2 clean", "totalOpps": "5",
+      "hygieneSlices": [{"label": "Clean", "value": 2}, {"label": "Needs attention", "value": 2}, {"label": "Critical", "value": 1, "role": "highlight"}],
+      "donutAsideTitle": "Three opportunities need work", "donutAside": "Two of five are clean, two need attention, and one critical Ravelin opportunity needs action now.",
+      "chartAsideTitle": "Where hygiene breaks", "chartAside": "Missing next steps and stale activity explain most flagged opportunities.",
+      "issueCategories": ["No next step", "Stale >14d", "No contact role", "Past close"], "issueSeries": [{"name": "Issues", "data": [2, 2, 1, 1]}],
+      "flaggedRows": [{"status": {"value": "Critical", "badgeVariant": "error"}, "name": "Ravelin Network Modernization", "amount": 1800000, "close": "2026-07-30", "issue": {"value": "No next step", "badgeVariant": "error"}, "fix": "Add a dated redline and security-owner step — closes in 6 days"}, {"status": {"value": "Attention", "badgeVariant": "warning"}, "name": "Northstar Dispatch Expansion", "amount": 900000, "close": "2026-08-04", "issue": {"value": "Stale", "badgeVariant": "warning"}, "fix": "Confirm decision process"}],
+      "synthTitle": "Ravelin cannot wait", "synthDetail": "The largest opportunity has no dated security or legal next step.",
+      "ctaLabel": "Draft fix plan", "ctaMsg": "Draft a pipeline hygiene fix plan beginning with Ravelin.",
+      "hygieneUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/o/Opportunity/list"
+    }
+  },
+  "stakeholder-map": {
+    "expectedText": ["Stakeholder map — Ravelin Rail Logistics", "Nikhil Rao", "Elena Marquez", "The CIO can veto", "Draft executive meeting invite"],
+    "values": {
+      "title": "Stakeholder map — Ravelin Rail Logistics", "subtitle": "4 contacts · 1 champion, 1 detractor · executive sponsor uncovered",
+      "heatmapCaption": "Stakeholders by influence and support", "xLabels": ["Detractor", "Neutral", "Supporter"], "yLabels": ["High power", "Mid power", "Low power"], "domain": [-2, 2],
+      "cells": [{"x": "Supporter", "y": "High power", "value": 2, "valueLabel": "CFO"}, {"x": "Detractor", "y": "High power", "value": -2, "valueLabel": "CIO"}, {"x": "Neutral", "y": "High power", "value": 0, "valueLabel": "COO"}, {"x": "Supporter", "y": "Mid power", "value": 1, "valueLabel": "Dir Ops"}],
+      "datagridCaption": "Key players, coverage and next touch",
+      "rows": [{"status": {"value": "Mobilized", "badgeVariant": "success"}, "name": "Elena Marquez", "role": "CFO · economic buyer", "stance": {"value": "Champion", "badgeVariant": "success"}, "last": "2026-07-23", "next": "Broker CIO meeting"}, {"status": {"value": "Risk", "badgeVariant": "error"}, "name": "Nikhil Rao", "role": "CIO · security approver", "stance": {"value": "Detractor", "badgeVariant": "error"}, "last": "2026-07-10", "next": "Executive security review"}, {"status": {"value": "Uncovered", "badgeVariant": "warning"}, "name": "Marcus Bell", "role": "COO · executive sponsor", "stance": {"value": "Neutral", "badgeVariant": "neutral"}, "last": "2026-06-30", "next": "Sponsor close review"}],
+      "calloutTitle": "The CIO can veto — and remains opposed", "calloutDescription": "Have Elena broker an executive security meeting with Nikhil this week.",
+      "ctaPrimaryLabel": "Draft executive meeting invite", "ctaPrimaryMsg": "Draft an executive security meeting invite for Nikhil Rao, brokered by Elena Marquez.",
+      "salesforceUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Account/001bm00000Wn1XLAAZ/view"
+    }
+  },
+  "team-pipeline": {
+    "expectedText": ["Team pipeline — Q3, week 4 of 13", "BEHIND PACE", "Bill Tarr", "Ravelin decides whether Bill recovers", "Draft team review note"],
+    "values": {
+      "title": "Team pipeline — Q3, week 4 of 13", "headerStatus": "BEHIND PACE", "subtitle": "$3.22M closed of $6.0M plan · 3 reps · 68 days left",
+      "chartCaption": "Open pipeline by rep and stage", "chartCategories": ["Bill", "Priya", "Marcus"], "chartSeries": [{"name": "Proposal", "data": [700000, 900000, 400000]}, {"name": "Negotiation", "data": [1800000, 500000, 600000]}, {"name": "Closing", "data": [300000, 200000, 400000]}],
+      "meterLabel": "Team attainment", "meterValue": 3.22, "meterMax": 6, "meterTarget": 6, "meterValueLabel": "$3.22M of $6.0M plan · 54%", "meterTargetLabel": "$6.0M plan", "meterStatus": "behind pace", "meterBands": [{"from": 0, "to": 3.6, "variant": "error", "label": "Behind"}, {"from": 3.6, "to": 5.4, "variant": "warning", "label": "At pace"}, {"from": 5.4, "to": 6, "variant": "success", "label": "Ahead"}],
+      "datagridCaption": "Per-rep Q3 scoreboard", "datagridRows": [{"status": {"value": "Behind", "badgeVariant": "error"}, "rep": "Bill Tarr", "plan": 2000000, "closed": 820000, "commit": 1100000, "gap": -80000, "attain": 41}, {"status": {"value": "At risk", "badgeVariant": "warning"}, "rep": "Priya Nair", "plan": 2000000, "closed": 1180000, "commit": 500000, "gap": -320000, "attain": 59}, {"status": {"value": "At risk", "badgeVariant": "warning"}, "rep": "Marcus Lee", "plan": 2000000, "closed": 1220000, "commit": 420000, "gap": -360000, "attain": 61}],
+      "calloutTitle": "Ravelin decides whether Bill recovers", "calloutDescription": "The $1.8M Ravelin close is the team's largest swing and still needs legal and security owners.",
+      "ctaPrimaryLabel": "Draft team review note", "ctaPrimaryMsg": "Draft a team review note covering Ravelin and each rep's largest unblock.", "ctaSecondaryLabel": "Open pipeline summary", "ctaSecondaryMsg": "Summarize team pipeline by stage and coverage gap."
+    }
+  },
+  "weekly-wrap": {
+    "expectedText": ["Weekly wrap — week of Jul 20", "$400K won", "Ravelin Rail Logistics", "Ravelin is Monday's unblock", "Prep Monday plan"],
+    "values": {
+      "title": "Weekly wrap — week of Jul 20", "subtitle": "$400K won · 1 lost · $900K new pipeline · 29 customer activities",
+      "activityCaption": "Daily activity — calls, emails, and meetings", "activityCategories": ["Mon", "Tue", "Wed", "Thu", "Fri"], "activitySeries": [{"name": "Calls", "data": [3, 4, 2, 5, 3]}, {"name": "Emails", "data": [5, 6, 4, 7, 5]}, {"name": "Meetings", "data": [1, 2, 1, 3, 2]}],
+      "waterfallCaption": "How commit moved this week", "waterfallStart": {"label": "Last Monday", "value": 4200000}, "waterfallSteps": [{"label": "Won", "delta": 400000}, {"label": "New pipeline", "delta": 900000}, {"label": "Ravelin slipped", "delta": -1800000}, {"label": "Lost", "delta": -220000}], "waterfallEnd": {"label": "This Monday"},
+      "datagridCaption": "This week's closed and moved deals", "dealRows": [{"status": {"value": "Slipped", "badgeVariant": "warning"}, "deal": "Ravelin Rail Logistics", "amount": 1800000, "event": {"value": "Close moved", "badgeVariant": "warning"}, "note": "Close moved Jul 25 to Jul 30 while redlines remain open"}, {"status": {"value": "Won", "badgeVariant": "success"}, "deal": "Juniper Yard Automation", "amount": 400000, "event": {"value": "Won", "badgeVariant": "success"}, "note": "Analytics renewal signed"}],
+      "calloutTitle": "Ravelin is Monday's unblock", "calloutDescription": "Start Monday by assigning legal and security owners for the $1.8M close.",
+      "button1Label": "Draft Slack post", "button1Content": "Draft a weekly team recap covering the Ravelin slip and Juniper win.", "button2Label": "Prep Monday plan", "button2Content": "Prepare Monday's Ravelin legal and security unblock plan."
+    }
+  },
+  "win-loss-review": {
+    "expectedText": ["Win / loss review — Ravelin Rail Logistics", "New Business Plant Upgrade", "Decision path not mapped", "Draft renewal lessons", "Proposal/Price Quote"],
+    "values": {
+      "title": "Win / loss review — Ravelin Rail Logistics", "subtitle": "8 closed deals · 62% win rate · $2.4M won, $780K lost",
+      "donutAsideTitle": "Decision process drives losses", "donutAside": "Three losses lacked a mapped decision path, two lost on security, and one ended in no decision.",
+      "pieCaption": "Loss reasons", "pieSlices": [{"label": "Decision path", "value": 3, "role": "highlight"}, {"label": "Security", "value": 2}, {"label": "No decision", "value": 1}],
+      "chartAsideTitle": "Large deals convert less often", "chartAside": "Win rate falls above $1M, where executive and security coverage matter most.",
+      "chartCaption": "Win rate by deal size", "chartCategories": ["<$250K", "$250K-$1M", ">$1M"], "chartSeries": [{"name": "Win rate", "data": [78, 64, 42]}],
+      "datagridCaption": "Largest losses and why", "lossRows": [{"status": {"value": "Lost", "badgeVariant": "error"}, "name": "New Business Plant Upgrade", "amount": 118000, "stage": {"value": "Proposal/Price Quote", "badgeVariant": "warning"}, "reason": "Decision path not mapped", "comp": "No decision"}, {"status": {"value": "Lost", "badgeVariant": "error"}, "name": "Ravelin Fleet Security", "amount": 95000, "stage": {"value": "Negotiation", "badgeVariant": "warning"}, "reason": "Security owner engaged too late", "comp": "Internal build"}],
+      "calloutTitle": "Map the decision path before proposal", "calloutDescription": "Ravelin's prior loss shows why the current renewal needs legal, security, and economic-buyer owners now.",
+      "button1Label": "Draft renewal lessons", "button1Content": "Draft lessons from Ravelin's prior losses for the current renewal team.",
+      "reportUrl": "https://orgfarm-39d35ccaaa-dev-ed.develop.my.salesforce.com/lightning/r/Report/00Obm00000Wn1XLAAZ/view"
+    }
+  }
+}
