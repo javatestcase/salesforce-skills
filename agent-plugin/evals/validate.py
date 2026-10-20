@@ -39,7 +39,6 @@ CALL_START_RE = re.compile(r"\bdispatch_readonly\(")
 GENERAL_DISPATCH_RE = re.compile(r"\bdispatch\s*\(")
 GQL_ARG_RE = re.compile(r'"queryInput":\s*"((?:[^"\\]|\\.)*)"')
 SOQL_ARG_RE = re.compile(r'"q":\s*"((?:[^"\\]|\\.)*)"')
-CALL_WINDOW = 6000
 PAIRS = {")": "(", "]": "[", "}": "{"}
 
 
@@ -79,19 +78,53 @@ def general_dispatch_call_problems(text):
     ]
 
 
+def dispatch_call_window(text, start):
+    """Return one complete ``dispatch_readonly(...)`` argument window, or ``None``."""
+    depth, quote, index = 1, None, start
+    while index < len(text):
+        char = text[index]
+        if quote:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char in "\"'":
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return text[start:index + 1]
+        index += 1
+    return None
+
+
 def salesforce_call_problems(text):
-    """Check every dispatch_readonly call and bare GraphQL line for valid syntax."""
+    """Validate complete read-only call expressions and bare GraphQL lines."""
     problems, n = [], 0
+    layout_shape = re.compile(
+        r'\s*method:\s*"GET",\s*'
+        r'url:\s*"/services/data/v63\.0/ui-api/records/<OPP_ID>",\s*'
+        r'queryParams:\s*\{\s*"layoutTypes":\s*"Full",\s*"modes":\s*"View"\s*\}\s*\)\s*$',
+        re.S,
+    )
 
     def line_of(pos):
         return text.count("\n", 0, pos) + 1
 
-    for m in CALL_START_RE.finditer(text):
-        window = text[m.end():m.end() + CALL_WINDOW]
+    for match in CALL_START_RE.finditer(text):
+        n += 1
+        where = f"line {line_of(match.start())}"
+        window = dispatch_call_window(text, match.end())
+        if window is None:
+            problems.append(f"{where}: dispatch_readonly call has an unclosed parenthesis")
+            continue
+        if layout_shape.fullmatch(window):
+            continue
         gql, soql = GQL_ARG_RE.search(window), SOQL_ARG_RE.search(window)
         first = min((item for item in (gql, soql) if item), key=lambda item: item.start(), default=None)
-        n += 1
-        where = f"line {line_of(m.start())}"
         if first is None:
             problems.append(f"{where}: dispatch_readonly call has no queryInput or q argument")
             continue
@@ -104,21 +137,21 @@ def salesforce_call_problems(text):
             except (json.JSONDecodeError, KeyError, TypeError):
                 problems.append(f"{where}: queryInput is not a JSON string of {{\"query\": \"...\"}}")
                 continue
-            err = bracket_error(query, '"')
+            error = bracket_error(query, '"')
         else:
             try:
-                err = bracket_error(json.loads('"' + soql.group(1) + '"'), "'")
+                error = bracket_error(json.loads('"' + soql.group(1) + '"'), "'")
             except json.JSONDecodeError:
                 problems.append(f"{where}: SOQL q is not a valid JSON string")
                 continue
-        if err:
-            problems.append(f"{where}: {err}")
+        if error:
+            problems.append(f"{where}: {error}")
 
-    for m in re.finditer(r"^[ \t]*(query \{.*)$", text, re.M):
+    for match in re.finditer(r"^[ \t]*(query \{.*)$", text, re.M):
         n += 1
-        err = bracket_error(m.group(1).replace('\\"', '"'), '"')
-        if err:
-            problems.append(f"line {line_of(m.start())}: {err}")
+        error = bracket_error(match.group(1).replace('\\"', '"'), '"')
+        if error:
+            problems.append(f"line {line_of(match.start())}: {error}")
     return n, problems
 
 

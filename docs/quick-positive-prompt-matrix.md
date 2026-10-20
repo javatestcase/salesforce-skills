@@ -8,7 +8,7 @@ contracts, not evidence that Quick has installed, routed, or rendered the plugin
 |---|---|---|
 | `account-context` | `Tell me about the Ravelin Rail Logistics account.` | A Salesforce account brief with Ravelin’s open and closed opportunities. |
 | `account-tiering` | `Rank my accounts into action tiers.` | Bill Tarr’s accounts ranked from Salesforce fit, activity, contacts, and opportunity data. |
-| `calendar-events` | `Show my schedule for October 19, 2026.` | Bill Tarr’s October 19 `Exec briefing` events related to Orrin Petroleum Group. |
+| `calendar-events` | `Show my Salesforce Event schedule for October 19, 2026, including any linked accounts or opportunities.` | Two October 19 `Exec briefing` Salesforce Event records related to Orrin Petroleum Group, rendered in the Salesforce current user’s timezone; no Google/Outlook calendar reads or calendar writes. |
 | `call-follow-up` | `Create a follow-up for my call with Avery Ravelin at Ravelin Rail Logistics. Transcript: “We agreed to schedule a technical deep dive next week. Avery will send the current site requirements on Friday. We will send the revised proposal and implementation outline. Avery asked for clarity on the renewal timeline.”` | A Salesforce-grounded customer email and internal Slack summary as drafts, or copyable draft text if no draft-capable connector is available. |
 | `call-prep` | `Prep me for my October 19, 2026 exec briefing with Orrin Petroleum Group.` | A meeting brief using the Orrin event, opportunity, account, and activity context. |
 | `close-plan` | `Build a close plan for Corvane Micro Devices — New Business Plant Upgrade.` | A close plan for the open $1.296M Value Proposition opportunity. |

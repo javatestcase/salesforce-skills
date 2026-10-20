@@ -8,3 +8,7 @@
 *.key
 *.secret
 .env
+
+# local tool state — never part of the shared package
+.sf/
+.kiro/

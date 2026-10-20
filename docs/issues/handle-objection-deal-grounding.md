@@ -50,4 +50,4 @@ Add a two-stage read-only deal-resolution flow to
 - add evaluation coverage for zero, one, and multiple candidate outcomes.
 
 This keeps the skill read-only and prevents a response from claiming deal grounding when the
-intended Opportunity was never resolved. It does not change the active mirror.
+intended Opportunity was never resolved.

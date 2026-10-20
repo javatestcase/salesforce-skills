@@ -32,20 +32,23 @@ Ground **only Opportunity** — it always exists (naming a missing object fails 
 
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { objectInfos(apiNames: [\\\"Opportunity\\\"]) { fields { ApiName label relationshipName } childRelationships { childObjectApiName relationshipName } } } }\"}" })
+  queryParams: { "queryInput": "{\"query\":\"query { uiapi { objectInfos(apiNames: [\\\"Opportunity\\\"]) { fields { ApiName label relationshipName } childRelationships { childObjectApiName relationshipName } } stages: objectInfos(objectInfoInputs: [{ apiName: \\\"Opportunity\\\", recordTypeIDs: [\\\"012000000000000AAA\\\"], fieldNames: [\\\"StageName\\\"] }]) { fields { ApiName ... on PicklistField { picklistValuesByRecordTypeIDs { recordTypeID picklistValues { label value } } } } } } }\"}" })
 ```
 
 Step 1 is the authority on names. Note: (a) scalar `__c` fields carrying stage-exit / next-step / blocker / qualification signal — take `{ value }` **and keep each field's `label`**; (b) each lookup's exact `relationshipName` for spanning a related name; (c) each child `relationshipName`. **Build an ApiName→label map now and use the `label` in ALL output** (e.g. "Executive Sponsor", not `Executive_Sponsor__c`; "Target Resolution Date", not `Target_Resolution_Date__c`) — never print a `__c` API name to the user.
 
+`stages` lists the Stage picklist in the org's order, read from the master record type (`012000000000000AAA`). It is the authority on stage order; never infer the next stage from general sales knowledge.
+
 ## 2a. Resolve to ONE opportunity Id (before the detail read)
 
-Given an SFDC **Id** already → skip to 2b with `Id: { eq: "<Id>" }`. Given a **name**, resolve it first — `first: 1` on a `Name like` only caps the response; it does **not** pick the right deal, so on a multi-match it returns an arbitrary one. Run a bounded, ordered candidate query (`%DEALNAME%` = 1–2 distinctive words):
+Given an SFDC **Id** already → skip to 2b with `Id: { eq: "<Id>" }`. Given a **name**, resolve it first — `first: 1` on a `Name like` only caps the response; it does **not** pick the right deal, so on a multi-match it returns an arbitrary one. Run a bounded, ordered candidate query over open deals, since only an open deal can advance (`%DEALNAME%` = 1–2 distinctive words; when the request also names the account, use `%<account word>%<deal words>%`):
 
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Opportunity(where: { Name: { like: \\\"%DEALNAME%\\\" } }, orderBy: { CloseDate: { order: ASC } }, first: 10) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } Account { Name { value } } } } } } } }\"}" })
+  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Opportunity(where: { Name: { like: \\\"%DEALNAME%\\\" }, IsClosed: { eq: false } }, orderBy: { CloseDate: { order: ASC } }, first: 10) { totalCount edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } Account { Name { value } } } } } } } }\"}" })
 ```
 
+- **`totalCount` above the rows returned** → the list is cut off and may not include the requested deal. Narrow `%DEALNAME%` (add the account or another distinctive word) and retry once; if it is still cut off, say how many open deals match and ask for the account. Never ask the user to choose from a cut-off list.
 - **Exactly one** candidate → take its `Id`, go to 2b.
 - **Several** → list them (Account · Name · Stage · $ · close) and **ask which**; don't guess.
 - **None** → broaden `%…%` and retry once.
@@ -66,7 +69,7 @@ dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
   queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Opportunity(where: { Id: { eq: \\\"<OPP_ID>\\\" } }, first: 1) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } Probability { value } NextStep { value } ForecastCategory { value } LastActivityDate { value } <OPP_CUSTOM> Account { Name { value } } Owner { Name { value } } <REL_BLOCKS> OpportunityContactRoles { edges { node { Role { value } IsPrimary { value } Contact { Name { value } Title { value } } } } } Tasks(first: 15, orderBy: { ActivityDate: { order: DESC } }) { edges { node { Subject { value } ActivityDate { value } Status { value } Description { value } TaskSubtype { value } } } } Events(first: 10, orderBy: { ActivityDate: { order: DESC } }) { edges { node { Subject { value } ActivityDate { value } Description { value } } } } } } } } } }\"}" })
 ```
 
-Target = next stage (default) or "to close" if asked.
+Target = the stage that follows the deal's current stage in step 1's `stages` order (default; when that is Closed Won, the target is to close), or "to close" if asked.
 
 **Retry contract on `InvalidSyntax` / "offending token `<EOF>`" (the dynamic splice dropped a brace):** construct **one** corrected query and dispatch it **only if its text differs** from the failed one (add the missing `}` — never re-send byte-identical text; an identical retry just burns a round-trip for the same error). If that corrected retry still fails, **stop retrying the spliced shape** — fall back to the fixed, guaranteed-field query below (standard fields + contact roles only, no `<OPP_CUSTOM>`/`<REL_BLOCKS>`), then continue the analysis and note that optional custom risk signals were unavailable:
 ```
@@ -89,6 +92,10 @@ Use whatever email/doc/Slack tools are present; if none, skip silently (SF-only 
 
 Exit criteria, qualification framework, and required-stakeholders-for-close are **external knowledge** — infer from the org's own data (StageName picklist, closed-won patterns) or ask the user once. Never invent. For the current stage's exit criteria (and every later stage if target is "to close"), mark each: **✅ Done / 🔶 In motion / ❌ Not started**, with the source and the specific gap. Then check the qualification framework the same way — flag only elements that **block advancement**, not every unknown.
 
+**Row states — Quick/Kiro adaptation:** Take every Done, In motion, or Scheduled state from 2b's Tasks and Events. Done needs a completed Task or a past-dated Event; In motion or Scheduled needs an open Task or a future-dated Task or Event for that step. A step that exists only as Next Step text, or a completed touch still awaiting a reply, is Not started.
+
+**Suggested steps — Quick/Kiro adaptation:** The documented reads do not return the org's exit criteria. Unless the user names them, present the checklist as suggested steps instead of asking. Base each step on this deal's returned data and cite it. Say "suggested steps" wherever the output would say exit criteria, including `headerSubtitle` and `meterValueLabel` (for example, "1 of 5 suggested steps complete"), and say in the callout that these are not the org's defined criteria.
+
 ## 4. Sequence the path
 
 Order gaps into the shortest credible path: whose gap (Us / Customer / internal team), parallel vs. strictly sequential, and the single next action that unblocks the most downstream items. Critical-path length → earliest credible close; flag if that lands after the current CloseDate.
@@ -100,6 +107,7 @@ When the data is assembled, call `display_widget`; a single one-line "Displaying
 ### Self-verification (before calling display_widget)
 
 - [ ] `widgetDefinition` is passed as a native JSON object — not a quoted string, not a code block pasted as text. If the value starts with `"{"`, it is wrong.
+- [ ] Row states (Quick/Kiro adaptation): every row marked In motion or Scheduled names the open or future-dated task or event behind it in its `item` text. If it cannot, set that row to Not started; a completed touch awaiting a reply is never In motion.
 
 The widget template is embedded below — resolve its tokens and call `display_widget({ resourceType: "dynamic", widgetDefinition: <hydrated> })` once (see the `widgetDefinition` param for token-resolution rules).
 

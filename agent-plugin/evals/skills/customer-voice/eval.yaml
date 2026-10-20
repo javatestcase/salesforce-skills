@@ -30,6 +30,8 @@ rubric:
   - "Each quote cites speaker name + title + account and a dated source link."
   - "Open-ended topics are clustered into themes; top 3–5 by frequency are returned."
   - "Accounts in scope with no transcript/thread are reported as gaps, not silently dropped."
+  - "Quotes come only from docs and email; Salesforce is used only for the three scoping reads, and no activity or case counts are reported."
+  - "With no on-topic customer quote, the output keeps the template with 0 quotes, the topic, and the period, lists gaps, and offers at most one in-skill next step."
 
 efficiency:
   no_repeated_identical_reads: true

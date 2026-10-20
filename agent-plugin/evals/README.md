@@ -92,9 +92,10 @@ routing or final-output quality.
 
 #### Built now: the skills' own calls (`e2e_calls.py`)
 
-`run_reads.py` runs simplified fixtures. `e2e_calls.py` runs every `dispatch_readonly` call in
-`skills/*/SKILL.md` as written, through the local MCP server (`local-mcp/`), so it tests the
-exact text the agent will send.
+`run_reads.py` runs simplified GraphQL fixtures. `e2e_calls.py` runs every documented
+`dispatch_readonly` call in `skills/*/SKILL.md` through the local MCP server (`local-mcp/`):
+GraphQL, SOQL, and Configure's allowlisted Opportunity Full/View UI API layout GET. It therefore
+tests the exact documented call shapes rather than only simplified fixture queries.
 
 ```bash
 python3 evals/e2e_calls.py --org genwatt-demo                      # all skills
@@ -104,23 +105,73 @@ python3 evals/e2e_calls.py --list                                  # placeholder
 
 - Placeholders are filled with dummy values in the format the skill tells the model to use
   (ISO date-times in `calendar-events`, `YYYY-MM-DD` elsewhere, single-quoted Ids in SOQL).
-  A failure means the call breaks when filled as instructed. If a new placeholder appears, add
-  it to `FILL` (or `SKILL_FILL` when one skill uses a shared name differently); unfilled ones
-  are reported as `GAP`.
-- It first checks that the server rejects a POST, a non-query endpoint, a GraphQL mutation, and
-  non-SELECT SOQL. Read-only throughout.
-- Current run on `genwatt-demo`: **155 of 155 calls passed**, with no failures or unfilled
-  placeholders. All four read-only guards passed. The active mirror carries three approved
-  upstream fixes:
+  Configure's layout read uses an actual accessible Opportunity Id returned by its documented
+  preceding lookup, or is reported as skipped when no Opportunity exists. A failure means the
+  call breaks when filled as instructed. If a new placeholder appears, add it to `FILL` (or
+  `SKILL_FILL` when one skill uses a shared name differently); unfilled ones are reported as
+  `GAP`.
+- It first checks that the server rejects a POST, a non-query endpoint, a GraphQL mutation,
+  non-SELECT SOQL, and malformed UI API layout requests. Read-only throughout.
+- Current verified run on the synthetic `fresh` org: **157 of 157 calls passed**, with no
+  failures, unfilled placeholders, or skipped conditional reads. All six read-only guards
+  passed. The active mirror carries twelve approved skill deviations: seven source corrections
+  tracked by filed upstream issues and five Quick/Kiro adaptations:
+  - `account-context`: preserve and safely rebuild its canonical deep query.
+  - `account-tiering`: reconcile binary tier/heatmap thresholds and omit unavailable currency
+    metrics rather than defaulting them to zero.
   - `lead-triage`: User and Group owner fragments ([#9](https://github.com/salesforce/salesforce-skills/issues/9)).
   - `forecast-narrative`: DateTime field-history boundary ([#15](https://github.com/salesforce/salesforce-skills/issues/15)).
   - `weekly-wrap`: two requests instead of one 12-root request ([#16](https://github.com/salesforce/salesforce-skills/issues/16)).
+  - `calendar-events`: typed Opportunity grounding and no unsupported attendee metric in the
+    active subtitle ([#20](https://github.com/salesforce/salesforce-skills/issues/20)).
+  - `customer-health`: preserve and preflight the canonical deep Account query before its first
+    Quick/Kiro dispatch, and take Support counts from aggregate case totals instead of the
+    ten-row sample ([#21](https://github.com/salesforce/salesforce-skills/issues/21); source unchanged). It also shows the object-not-string widget
+    payload example. Eight focused tests and the complete 70-test local suite pass; the
+    query-preflight rule and case-total correction are Quick-validated, and the payload example
+    has one clean Quick run, not yet enough to call it fixed.
+  - `customer-voice`: take quotes only from docs and email with no Salesforce reads beyond the
+    three scoping reads, and keep a zero-quote result on the output template with the period and
+    at most one in-skill next step. Four focused tests pass, including a byte-for-byte check that
+    the rules are the only difference from the source; a normal Quick rerun followed both rules.
+  - `daily-briefing`: copy closing-soon and past-due row names from the returned values, using
+    the Opportunity Name unchanged when it already begins with the Account Name. The calendar read
+    also selects Event `AccountId` and passes it to the meeting-account read, so
+    Opportunity-linked meetings resolve to their Account ([#22](https://github.com/salesforce/salesforce-skills/issues/22); source unchanged).
+    When an email tool is available, the inbox checks run and their result is reported; otherwise
+    the briefing says the inbox was not checked. Nine focused tests pass, including an exact
+    source-plus-changes check. Quick reruns showed all three changes working.
+  - `deal-advance-gap`: the step 2a name lookup searches open deals only, selects `totalCount`,
+    and narrows once when the candidate list is cut off ([#23](https://github.com/salesforce/salesforce-skills/issues/23); source unchanged).
+    Step 1 also returns the Stage picklist in the org's order, and the default target comes from it
+    ([#24](https://github.com/salesforce/salesforce-skills/issues/24); source unchanged). Row states rest only on returned tasks and events, and unsourced exit
+    criteria are labeled suggested steps; a widget self-check downgrades In motion or Scheduled rows
+    that cannot name their task or event. Eleven focused tests pass, including an exact
+    source-plus-changes check. Quick reruns showed all four changes working.
+  - `deal-review`: the step 2 deal read selects `totalCount`. When several deals match, a
+    documented candidate read, narrowed first by words from the request when more than 10 match,
+    takes the one exact name match or the one open candidate, and otherwise asks which deal is
+    meant without offering a cut-off list
+    ([#26](https://github.com/salesforce/salesforce-skills/issues/26); source unchanged). Step 1
+    also returns the Stage picklist in the org's order, and the stage tile takes its position and
+    stages to close from it, the gap behind
+    [#24](https://github.com/salesforce/salesforce-skills/issues/24)
+    ([follow-up comment](https://github.com/salesforce/salesforce-skills/issues/24#issuecomment-6271505032)). Ten focused tests pass,
+    including an exact source-plus-changes check. Neither correction has been run in Quick yet.
+  - `deal-signals`: a book or team sweep returns the text digest instead of a widget that needs a
+    score and trend no step computes, and a single-deal widget drops the chart-and-meter column
+    ([#25](https://github.com/salesforce/salesforce-skills/issues/25); source unchanged). Stale commitment fires from the fetched
+    `LastModifiedDate`, a skipped email search is stated, and the digest lists every flagged deal.
+    Fourteen focused tests pass, including an exact source-plus-changes check and a schema check
+    of the single-deal widget. Quick reruns showed the book-sweep, email, stale-commitment, and
+    complete-digest rules working; the single-deal widget has not been run in Quick.
 
 #### MCP Apps protocol, hosted contracts, and browser compatibility
 
 `mcp_apps/` validates the widget-first `display_widget` path retained by the active skills:
 
-- 26/26 active widget blocks match upstream.
+- 25/26 active widget blocks match upstream exactly; `calendar-events` has one tightly checked
+  variable-contract subtitle correction while its renderer JSON remains identical to upstream.
 - 26/26 hosted Headless 360 calls return the submitted widget in structured content and
   Salesforce UI metadata.
 - 26/26 meaningful Ravelin widgets pass a compatible cross-origin Chrome host, including

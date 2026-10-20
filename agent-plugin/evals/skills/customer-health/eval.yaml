@@ -14,7 +14,8 @@ should_not_trigger:
 expected_reads:
   - "objectInfos(apiNames: [\"Account\"])"   # step 1 grounding
   - "Account(where: { Name: { like:"         # step 2 account read
-  - "Cases(first: 10"                          # support signal
+  - "Cases(first: 10"                          # latest-ten support detail
+  - "caseTotal: Case(where:"                   # complete support counts
   - "Tasks(first: 20"                          # engagement cadence
 batched_in_one_turn: true      # step 2 account read + evidence together
 forbidden_endpoints: ["discover", "describe"]
@@ -29,6 +30,7 @@ output_must_link_records: true
 rubric:
   - "Scores each health dimension (relationship, engagement trend, commercial, support, value) citing the underlying values."
   - "Distinguishes what CRM can and cannot see (usage/NPS/tickets), marking non-visible dimensions rather than guessing."
+  - "Support counts come from the complete case aggregates; capped case rows are described only as the latest ten."
   - "Gives an overall verdict naming the one or two dimensions driving it."
   - "In QBR mode it adds the meeting kit (value delivered, adoption, open items, next phase, agenda)."
   - "CRM-edit suggestions are framed for the rep to make; the skill reads only and links the account inline."

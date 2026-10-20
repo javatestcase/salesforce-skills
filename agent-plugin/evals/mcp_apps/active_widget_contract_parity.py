@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Fail when an active dynamic-widget block is missing or differs from upstream.
+"""Fail when an active dynamic-widget renderer changes or a contract differs beyond an approved local exception.
 
-This is deliberately offline. It protects the active skill tree from losing or altering the
-upstream display_widget template/variable-contract blocks while allowing approved non-widget
-query fixes elsewhere in the skill.
+This is deliberately offline. It protects the active skill tree from losing or altering upstream
+renderer JSON while allowing approved non-widget query fixes and the calendar-events subtitle
+correction that removes an unsupported attendee metric.
 """
 
 import json

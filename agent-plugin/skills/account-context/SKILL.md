@@ -82,6 +82,22 @@ Filter by the resolved `Id` (disambiguation is done — no `like`, no `first:1` 
 
 Preserve the supplied GraphQL documents; replace only `<ID>` and the grounded custom-field placeholders.
 
+**Canonical query execution — Quick/Kiro adaptation:** The deep read below is a complete
+canonical request, not a query outline. Start from its literal `queryInput` and substitute only
+`<ID>`, `<ACCT_CUSTOM>`, `<OPP_CUSTOM>`, `<CONTACT_CUSTOM>`, and `<TASK_CUSTOM>`.
+
+- Each `*_CUSTOM` value is zero or more complete, confirmed field selections, for example
+  `Health_Score__c { value }`; omit the whole slot when no confirmed custom field applies.
+- Do **not** retype or reformat the document, add or remove braces, move a selection set, or
+  merge/split this request. `aggregate` is a sibling of `query` under `uiapi`, never a child of
+  `uiapi.query`.
+- Before dispatch, verify that all placeholders are resolved or omitted and that the query retains
+  `uiapi { query { Account(...) { ... } } aggregate { Opportunity(...) { ... } } }`.
+- On a JSON or GraphQL syntax error, discard the generated request. Rebuild once from this exact
+  template using the resolved `<ID>` and with all four custom slots omitted. Do not hand-repair
+  braces or relocate `aggregate`. If that standard-fields request still fails, report the error
+  and stop rather than retrying a mutated query.
+
 **Rules that avoid the retry loop:**
 - Related record's name → span the lookup: `Owner { Name { value } }`. `Account.Owner` and `Opportunity.Owner` are single-target (→ `User`) and span cleanly. Never append `{ … }` to a raw `Id`/`__c` field.
 - **Activity owners are polymorphic — don't span them.** `Task.Owner`/`Event.Owner` (and `Who`/`What`) are `User | Group` unions, so `Owner { Name { value } }` fails with `Field 'Name' in type 'Task_Owner' is undefined`. The default query below omits the owner span on Tasks; if you truly need it, use a fragment — `Owner { ... on User { Name { value } } }`. Don't assume symmetry with Opportunity.

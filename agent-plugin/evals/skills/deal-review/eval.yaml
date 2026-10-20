@@ -32,7 +32,9 @@ rubric:
   - "A current-cycle CloseDate slip is penalized only when OpportunityHistories shows the current CloseDate moved this cycle."
   - "Strengths are populated when present, not dropped while keeping risks."
   - "Every qualification row and risk cites a dated source; blanks are shown as blank, not invented."
+  - "When the deal read matches more than one deal, the candidate read resolves the requested deal or the user is asked; a different deal is never reviewed silently, and the user is never asked to choose from a cut-off list."
+  - "The stage tile's position and stages-to-close come from the org's stage order in step 1, not general sales knowledge."
 
 efficiency:
   no_repeated_identical_reads: true
-  max_salesforce_reads: 2
+  max_salesforce_reads: 4      # ground + deal read, plus a candidate read and a rerun by Id on a multiple match

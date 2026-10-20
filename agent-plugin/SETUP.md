@@ -93,9 +93,9 @@ register the exact `http://localhost:<port>/...` redirect URI sent by the client
 ## Local read-only testing
 
 `evals/local-mcp/salesforce-readonly-mcp` runs the skills' read calls through an existing `sf`
-CLI login. It exposes Headless 360's `dispatch_readonly` signature, accepts only GET on the
-GraphQL and SOQL query endpoints, and rejects mutations and non-SELECT SOQL before contacting
-Salesforce.
+CLI login. It exposes Headless 360's `dispatch_readonly` signature, accepts only documented GET
+GraphQL/SOQL reads plus Configure's exact v63.0 Opportunity Full/View UI API layout read, and
+rejects mutations, non-SELECT SOQL, and every other REST route before contacting Salesforce.
 
 Example Kiro workspace entry:
 

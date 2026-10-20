@@ -12,10 +12,11 @@ should_not_trigger:
   - "prep me for the City of Hope meeting"                      # -> call-prep
 
 expected_reads:
-  - "currentUser { TimeZoneSidKey"           # step 1 timezone
-  - "Event(scope: MINE"                        # step 3 event read
-  - "StartDateTime { value displayValue }"     # local-time rendering
-  - "What { ... on Account"                    # linked deal/account span
+  - "currentUser { TimeZoneSidKey"                                      # step 1 timezone
+  - "Event(scope: MINE"                                                 # step 3 event read
+  - "StartDateTime { value displayValue }"                              # local-time rendering
+  - "What { __typename"                                                 # typed related-record span
+  - "... on Opportunity { Id Name { value } Amount { value displayValue }"  # grounded deal data
 forbidden_endpoints: ["discover", "describe"]
 
 output_must_contain:
@@ -30,7 +31,8 @@ rubric:
   - "Computes the requested date range correctly (today / tomorrow / week / month / explicit range)."
   - "Groups events by day with one table each; all-day and empty-location rows render cleanly."
   - "Returns 'No events found' for an empty range rather than silently broadening the window."
-  - "Linked Accounts/Opportunities are shown by name and linked inline."
+  - "Classifies an Event as deal-linked only when What.__typename is Opportunity, and derives the link and value only from returned Opportunity Id and Amount."
+  - "Does not report an attendee count from Who or Attendees; any subtitle attendee metric is omitted unless a supported participant collection is queried."
 
 efficiency:
   no_repeated_identical_reads: true

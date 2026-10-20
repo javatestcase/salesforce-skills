@@ -45,16 +45,20 @@ Step 1 is the authority on names — use exact strings, never guess. Consider sc
 
 ## 2. Read (fill from step 1)
 
-`%ACCOUNT%` = the user's match (1–2 words); swap for `Id: { eq: \"...\" }` when an SFDC Id was given instead of a name. One call pulls the account plus its open-renewal-relevant opportunities and recent cases — no separate dispatch per object.
+`%ACCOUNT%` = the user's match (1–2 words); when an SFDC Id was given instead of a name, swap every `Name: { like: \"%ACCOUNT%\" }` predicate (the Account root and each `aggregate` filter) for `Id: { eq: \"...\" }`. One call pulls the account plus its open-renewal-relevant opportunities, recent cases, and complete case counts — no separate dispatch per object.
 
 **Field rule (avoids the retry loop):** add grounded custom fields only as `Field__c { value }` (`{ value displayValue }` for currency/picklist). Use the standard `Owner` span already written in the template; never invent a relationship span from a raw `Id`/`__c` field. Insert `<ACCT_CUSTOM>` = confirmed Account `__c { value }` fields.
 
-Treat this GraphQL read template as literal. Replace only `%ACCOUNT%`, `<ACCT_CUSTOM>`, or the documented exact-Id filter. Do not reconstruct, shorten, flatten, or remove its trailing closing delimiters.
+**Canonical query execution — Quick/Kiro adaptation:** The deep read below is a complete canonical `queryInput`, not an outline. Copy it as one unit and substitute only `%ACCOUNT%` (every occurrence), `<ACCT_CUSTOM>`, or the documented complete exact-Id filter. Omit `<ACCT_CUSTOM>` when no confirmed field applies; do not retype, regenerate, shorten, flatten, or hand-edit the surrounding JSON or GraphQL. Keep `aggregate` a sibling of `query` under `uiapi`.
+
+Before the first dispatch, verify that the nested `queryInput` JSON decodes, every placeholder is resolved or omitted, and `()`, `[]`, and `{}` remain balanced. Do not send a reconstructed request and wait for Salesforce to find its syntax errors. If preflight or Salesforce reports a JSON/GraphQL syntax error, discard that attempted request and rebuild once from this exact template with `<ACCT_CUSTOM>` omitted. Validate the rebuilt request before dispatch; if the standard-field form still fails, report the error and stop rather than repairing braces in place.
 
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Account(where: { Name: { like: \\\"%ACCOUNT%\\\" } }, first: 1) { edges { node { Id Name { value } Type { value } Industry { value } AnnualRevenue { value displayValue } LastActivityDate { value } CreatedDate { value } <ACCT_CUSTOM> Owner { Name { value } } Opportunities(first: 20, orderBy: { CloseDate: { order: DESC } }) { edges { node { Id Name { value } Type { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } IsWon { value } } } } Cases(first: 10, where: { CreatedDate: { gte: { literal: LAST_90_DAYS } } }, orderBy: { CreatedDate: { order: DESC } }) { edges { node { CaseNumber { value } Subject { value } Status { value } Priority { value } CreatedDate { value } } } } Tasks(first: 20, where: { ActivityDate: { gte: { literal: LAST_90_DAYS } } }, orderBy: { ActivityDate: { order: DESC } }) { edges { node { Subject { value } ActivityDate { value } TaskSubtype { value } } } } } } } } } }\"}" })
+  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Account(where: { Name: { like: \\\"%ACCOUNT%\\\" } }, first: 1) { edges { node { Id Name { value } Type { value } Industry { value } AnnualRevenue { value displayValue } LastActivityDate { value } CreatedDate { value } <ACCT_CUSTOM> Owner { Name { value } } Opportunities(first: 20, orderBy: { CloseDate: { order: DESC } }) { edges { node { Id Name { value } Type { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } IsWon { value } } } } Cases(first: 10, where: { CreatedDate: { gte: { literal: LAST_90_DAYS } } }, orderBy: { CreatedDate: { order: DESC } }) { edges { node { CaseNumber { value } Subject { value } Status { value } Priority { value } CreatedDate { value } } } } Tasks(first: 20, where: { ActivityDate: { gte: { literal: LAST_90_DAYS } } }, orderBy: { ActivityDate: { order: DESC } }) { edges { node { Subject { value } ActivityDate { value } TaskSubtype { value } } } } } } } } aggregate { matchedAccounts: Account(where: { Name: { like: \\\"%ACCOUNT%\\\" } }) { edges { node { aggregate { Id { count { value } } } } } } caseTotal: Case(where: { Account: { Name: { like: \\\"%ACCOUNT%\\\" } }, CreatedDate: { gte: { literal: LAST_90_DAYS } } }) { edges { node { aggregate { Id { count { value } } } } } } caseOpen: Case(where: { Account: { Name: { like: \\\"%ACCOUNT%\\\" } }, CreatedDate: { gte: { literal: LAST_90_DAYS } }, IsClosed: { eq: false } }) { edges { node { aggregate { Id { count { value } } } } } } caseEscalated: Case(where: { Account: { Name: { like: \\\"%ACCOUNT%\\\" } }, CreatedDate: { gte: { literal: LAST_90_DAYS } }, Status: { eq: \\\"Escalated\\\" } }) { edges { node { aggregate { Id { count { value } } } } } } caseHighPriority: Case(where: { Account: { Name: { like: \\\"%ACCOUNT%\\\" } }, CreatedDate: { gte: { literal: LAST_90_DAYS } }, Priority: { in: [\\\"High\\\", \\\"Critical\\\"] } }) { edges { node { aggregate { Id { count { value } } } } } } } } }\"}" })
 ```
+
+**Case totals — local correction:** `Cases(first: 10)` returns only the ten most recent cases in the window. Take every Support count from the `aggregate` roots: `caseTotal`, `caseOpen`, `caseEscalated` (Status `Escalated`), and `caseHighPriority` (Priority `High` or `Critical`). Present status or priority read from the rows only as the latest ten, never as the total. If `matchedAccounts` is greater than 1, the totals span more than one account: rerun this request once with the exact-Id filter for the returned Account `Id` and use its totals. If an aggregate is missing or errors, mark that count unavailable; never count the capped rows instead.
 
 Empty `edges` on `Account` → broaden `%ACCOUNT%`, or ask the user for the right account. Empty `edges` on `Cases`/`Tasks` just means none in the window — don't retry, don't treat as an error. The `Tasks` child (last 90d) is the in-CRM activity cadence behind the Engagement-trend dimension (and the widget engagement chart) — read it even when no external calendar/email connector is present.
 
@@ -75,7 +79,7 @@ Use whatever email/calendar/doc/Slack tools are available; skip silently if none
 | Relationship | champion/exec engagement (evidence), breadth of contacts active | 🟢🟡🔴 |
 | Engagement trend | in-CRM `Tasks` cadence (step 2, last 90d) + meeting/email cadence (evidence) vs prior period | |
 | Commercial | renewal proximity (open renewal opp `CloseDate`), open expansion, payment/contract issues | |
-| Support | open Cases, aging/priority from step 2 | |
+| Support | step 2 `aggregate` case counts (total, open, Escalated, High/Critical); aging/priority detail only from the latest-ten rows, labeled as such | |
 | Value delivery | documented outcomes vs the success plan (docs), if one exists | |
 
 Overall verdict with the one or two dimensions driving it.
@@ -87,6 +91,10 @@ When the data is assembled, call `display_widget`; a single one-line "Displaying
 ### Self-verification (before calling display_widget)
 
 - [ ] `widgetDefinition` is passed as a native JSON object — not a quoted string, not a code block pasted as text. If the value starts with `"{"`, it is wrong.
+
+**Widget payload — Quick/Kiro adaptation:** pass the hydrated widget to `display_widget` as an object, never as JSON text. If you assembled it as text, parse it into an object before the call.
+- ❌ WRONG: `widgetDefinition: "{\"renderer\":{...}}"` (stringified with escaped quotes)
+- ✅ RIGHT: `widgetDefinition: {"renderer":{...}}` (native object, no quotes around opening brace)
 
 The widget template is embedded below — resolve its tokens and call `display_widget({ resourceType: "dynamic", widgetDefinition: <hydrated> })` once (see the `widgetDefinition` param for token-resolution rules).
 

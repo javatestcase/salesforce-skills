@@ -35,6 +35,8 @@ output_must_link_records: true   # SF records linked as /lightning/r/<Type>/<Id>
 # --- Outcome: LLM-judge rubric (natural-language criteria) ---
 rubric:
   - "Every value shown is traceable to a query result; nothing is fabricated."
+  - "Each opportunity row name is the returned Opportunity Name unchanged when it already begins with the Account Name, otherwise `<Account> — <Opp Name>`; no name is retyped or reworded."
+  - "When an email tool is available, the briefing checks the inbox and reports the result in the follow-ups stat and inbox section; if the inbox was not checked, it says so instead of omitting the section."
   - "Blank fields are shown as blank, not invented."
   - "Field labels are human-readable, never raw __c API names or Ids."
   - "Leads with a single highest-priority move for the day."

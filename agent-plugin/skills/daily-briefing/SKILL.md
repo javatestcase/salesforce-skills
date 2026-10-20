@@ -43,14 +43,14 @@ Five independent reads (plus step 1) — batch them in a single turn. Insert `<O
 
 **2a. Today's calendar** — today's meetings for the running user. There is **no `/connect/calendar/...` REST resource on this server** — read the calendar from the `Event` object via GraphQL (below), or a dedicated calendar connector tool if one is present. Do NOT guess a REST path or reach for `discover` on a 404; the query here is the path.
 
-**Shape gotcha — `Event.What`/`Event.Who` are polymorphic** (`Event_What` / `Event_Who` unions) and expose **no `Name` span**: `What { Name { value } }` throws a schema error. Pull the raw `WhatId` / `WhoId` scalars instead. `WhatId` is your best account link — a `001…` Id is an Account, `006…` an Opportunity — resolve it directly in step 3 (no domain-guessing for those). Get attendee email domains from the `Description`/`Location` text, or an `EventRelation` child if you need invitees.
+**Shape gotcha — `Event.What`/`Event.Who` are polymorphic** (`Event_What` / `Event_Who` unions) and expose **no `Name` span**: `What { Name { value } }` throws a schema error. Pull the raw `WhatId` / `WhoId` scalars instead, plus the standard `AccountId`. `AccountId` is your best account link: Salesforce derives it from the related record, so an Opportunity-linked (`006…`) meeting carries that Opportunity's Account. Use it directly in step 3 (no domain-guessing for those); `WhatId` still identifies the specific record (`001…` Account, `006…` Opportunity). Get attendee email domains from the `Description`/`Location` text, or an `EventRelation` child if you need invitees.
 
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Event(scope: MINE, where: { ActivityDate: { eq: { literal: TODAY } } }, first: 50, orderBy: { StartDateTime: { order: ASC } }) { edges { node { Id Subject { value } StartDateTime { value } EndDateTime { value } Location { value } WhatId { value } WhoId { value } Description { value } } } } } } }\"}" })
+  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Event(scope: MINE, where: { ActivityDate: { eq: { literal: TODAY } } }, first: 50, orderBy: { StartDateTime: { order: ASC } }) { edges { node { Id Subject { value } StartDateTime { value } EndDateTime { value } Location { value } WhatId { value } WhoId { value } AccountId { value } Description { value } } } } } } }\"}" })
 ```
 
-`scope: MINE` returns events **you own** (organize). Meetings where you're only an invitee live under `EventRelation` and may not appear here — an empty calendar usually means that or a genuinely clear day, not a failure; say which. Extract each event's external-attendee email domains and its `WhatId`; those are the input to step 3.
+`scope: MINE` returns events **you own** (organize). Meetings where you're only an invitee live under `EventRelation` and may not appear here — an empty calendar usually means that or a genuinely clear day, not a failure; say which. Extract each event's `AccountId`, `WhatId`, and external-attendee email domains; those are the input to step 3.
 
 **2b. Closing soon** — the rep's open opps closing in the next 14 days. A small filtered set — pull concrete rows (`first: 50`), not an aggregate.
 
@@ -74,6 +74,8 @@ dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
 
 **2d. Inbox signal** — unread email from the last 48h whose sender domain matches an account you own (email tool). Sender, subject, domain only — don't read bodies (that's `inbox-sweep`).
 
+**Inbox check — Quick/Kiro adaptation:** When an email tool is available, run this inbox read and step 3's "you owe them" search; they are part of the briefing, not optional. Report the result in the follow-ups stat (`kpiFollowupsLine`/`kpiFollowupsSub`) and the owe/inbox block (the Inbox section in the text fallback), using `inboxClear` when nothing is found. If no email tool is available or the search fails, keep that stat and block and say the inbox was not checked. Never drop them silently.
+
 **2e. Running user** — who's the briefing for, their name, and timezone. The running-user record needs **no Id** — `currentUser` always resolves to the signed-in user. It requires **v66.0** specifically (the GraphQL endpoint otherwise pins v65.0 — bump the version in the URL for this one call):
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v66.0/graphql",
@@ -83,10 +85,10 @@ Use `Name` for the briefing title/date header; `TimeZoneSidKey` to render "today
 
 ## 3. Meeting context — ONE batched turn (depends on 2a's domains)
 
-Resolve every meeting's account in **one** query (not per-meeting), OR-ing two kinds of match together: (a) any `WhatId` from 2a that is an Account (`001…`) → `Id: { eq }`, or an Opportunity (`006…`) → its `AccountId`; (b) the external-attendee domains → `Website` `like`. Prefer the direct `WhatId` link when present — it's exact; fall back to domain match only for meetings with no usable `WhatId`.
+Resolve every meeting's account in **one** query (not per-meeting), OR-ing two kinds of match together: (a) every non-null `AccountId` from 2a → `Id: { in }`; (b) the external-attendee domains → `Website` `like`. Prefer the `AccountId` link when present — it's exact; fall back to domain match only for meetings with no `AccountId`.
 ```
 dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
-  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Account(where: { or: [ { Id: { in: [\\\"<WhatId account 001…>\\\"] } }, { Website: { like: \\\"%domain1%\\\" } }, { Website: { like: \\\"%domain2%\\\" } } ] }, first: 25) { edges { node { Id Name { value } Website { value } LastActivityDate { value } Opportunities(where: { IsClosed: { eq: false } }, first: 5, orderBy: { Amount: { order: DESC } }) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } } } } } } } } } }\"}" })
+  queryParams: { "queryInput": "{\"query\":\"query { uiapi { query { Account(where: { or: [ { Id: { in: [\\\"<Event AccountId 001…>\\\"] } }, { Website: { like: \\\"%domain1%\\\" } }, { Website: { like: \\\"%domain2%\\\" } } ] }, first: 25) { edges { node { Id Name { value } Website { value } LastActivityDate { value } Opportunities(where: { IsClosed: { eq: false } }, first: 5, orderBy: { Amount: { order: DESC } }) { edges { node { Id Name { value } StageName { value displayValue } Amount { value displayValue } CloseDate { value } } } } } } } } } }\"}" })
 ```
 In the same turn, per matched account: **docs** search (most recent transcript/notes/plan — title + one-line) and **"you owe them"** email search (sent-mail promises to those attendees — "I'll send/get you/intro" — still unfulfilled). No account match → `(no CRM match — net new or personal)`.
 
@@ -111,6 +113,8 @@ When the data is assembled, call `display_widget`; a single one-line "Displaying
 The widget template is embedded below — resolve its tokens and call `display_widget({ resourceType: "dynamic", widgetDefinition: <hydrated> })` once (see the `widgetDefinition` param for token-resolution rules).
 
 Tokens: `dateEyebrow briefingTitle` (header) · `topMove topMoveDetail topMoveDraftMsg` (the #1 move callout with its primary action button) · `kpiEventsLine kpiEventsSub kpiPipelineLine kpiPipelineSub kpiGapsLine kpiGapsSub kpiFollowupsLine kpiFollowupsSub` (four-up stat strip — each `*Line` is the whole `"<n> <unit>"` headline, e.g. `"7 meetings"`, `"$495K"`, `"2 opps"`) · `flag1Title flag1Sub flag1Msg flag2Title flag2Sub flag2Msg flag3Title flag3Sub flag3Msg flag4Title flag4Sub` (attention flags with sendMessage buttons, except flag4) · `meetingsHeading meeting1Time meeting1Title meeting1Ask meeting2Time meeting2Title meeting2Ask meeting3Line meeting4Line` (`meetingsHeading` is the section title incl. count e.g. `"Today's meetings — 4, 2 external"`; two detailed meetings render as walk-in-asking callouts — put the `"$45K · closes today"`-style tag inline in `meetingNTitle`; the two compact meetings are a single `meetingNLine` string each) · `oweHeading owe1Title owe1Meta owe1Msg owe2Title owe2Meta owe2Msg inboxClear` (`oweHeading` incl. count; open-promise cards; inbox-clear caption when empty) · `oppsSummary closingLabel gridColumns closingRows pastDueLabel pastDueRows` (accordion with two datagrids sharing one `gridColumns` schema; each is preceded by its `*Label` incl. count+$; each row object is `{ name (plain string — format as "<Account> — <Opp Name>", e.g. "Okta — Support Uplift"; concatenate `Account.Name.value` and `Opportunity.Name.value` from the SF response — plain strings, not objects), stage, trend, close (plain string — human-readable relative date, e.g. "Today", "Jul 31 · tomorrow", "Jul 15 · 15d past"; NOT ISO YYYY-MM-DD), amount, next, _tone }` where `amount`/`trend` are numbers/number[], risky rows carry `_tone:"error"`/`"warning"`; `gridColumns` is the typed column array — keep the `trend` sparkline column). Omit any block whose data you lack; drop the column if no activity history; do not send empty arrays or leave stray {{tokens}}.
+
+**Row names — Quick/Kiro adaptation:** Copy each `closingRows` and `pastDueRows` `name` from the returned values. If `Opportunity.Name` already begins with `Account.Name`, use `Opportunity.Name` unchanged; otherwise use `<Account> — <Opp Name>`. Never retype, shorten, or reword a name.
 
 ```json
 {

@@ -28,6 +28,10 @@ output_must_link_records: true
 
 rubric:
   - "Resolves a named deal to exactly one Id; on multiple candidates it lists them and asks rather than guessing."
+  - "Candidate lookup covers open deals only; when the match count exceeds the rows returned, it narrows the search instead of offering a cut-off list."
+  - "The target stage is the one after the deal's current stage in the org's stage order from step 1, never a stage guessed from general sales knowledge."
+  - "Done, In motion, and Scheduled states each rest on a returned task or event; a next step held only as text is Not started."
+  - "Unless the user named exit criteria, the checklist is presented as suggested steps, not the org's exit criteria."
   - "Each exit criterion is marked Done / In motion / Not started with a cited source and the specific gap."
   - "Open or future-dated tasks are treated as 'in motion', never as completed touches."
   - "Gaps are sequenced into a shortest credible path with owners and the critical-path close date."
@@ -35,4 +39,4 @@ rubric:
 
 efficiency:
   no_repeated_identical_reads: true
-  max_salesforce_reads: 3
+  max_salesforce_reads: 4      # ground + candidates + detail, plus one candidate retry (broaden on none, narrow when cut off)

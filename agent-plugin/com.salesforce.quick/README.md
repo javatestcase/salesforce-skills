@@ -5,16 +5,14 @@ assigns no portable meaning to it, and clients that do not implement this namesp
 
 ## Current status
 
-No Quick installation, Salesforce connector mapping, MCP Apps rendering, or action execution has
-been verified in this repository. This directory is therefore a placeholder for future Quick
-integration—not evidence that Quick supports the package or that it requires a separate UI.
+Synthetic Quick runs validated `calendar-events` and `customer-health` through Headless 360 reads and rendered widgets. After the pre-dispatch safeguard was added, a fresh health run completed without the earlier rewritten-query syntax error. A later run confirmed the health case-total correction. A `customer-voice` rerun followed the local source and zero-quote rules. `daily-briefing` reruns showed the meeting-account correction, verbatim row names, and the inbox check. `deal-advance-gap` reruns showed its lookup, stage-order, row-state, and suggested-step changes. Other skills, connector mapping, and action execution remain unverified in this repository.
 
 The active `agent-plugin/skills/` tree retains all upstream behavior:
 
 - all 34 upstream skills, including `using-display-widget`;
 - widget-first `display_widget` instructions and complete renderer contracts;
 - source text fallbacks for hosts where the tool is unavailable or cannot render; and
-- only the three approved Salesforce query fixes documented in `skills/README.md`.
+- the twelve approved deviations documented in [`CONVERSION_RECIPE.md`](../CONVERSION_RECIPE.md), including the local account-context, account-tiering, calendar, customer-health, customer-voice, daily-briefing, deal-advance-gap, deal-review, and deal-signals adaptations.
 
 Protocol and renderer behavior are documented in
 [`../evals/mcp_apps/README.md`](../evals/mcp_apps/README.md). Headless 360 accepts all 26 active

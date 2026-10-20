@@ -48,6 +48,8 @@ dispatch_readonly(method: "GET", url: "/services/data/v65.0/graphql",
 
 After threshold checks flag accounts, in ONE turn fire (parallel, if tools present): **email** (last reply from us / **inbound from them with no reply from us in 3+ business days** / bounce / OOO / departure), **docs/transcripts** (competitor mention), **slack** (deal-desk/exec concerns). Keyed on the flagged account names. No tools present → skip silently.
 
+**Email evidence — Quick/Kiro adaptation:** When an email tool is available, run the 2b email search for the flagged accounts; it is part of the sweep, not optional. If no email tool is available or the search fails, add one line saying email was not checked (under the ✅ line in the digest, or in the widget callout), so inbound-waiting, champion-risk, and competitor signals are not implied clear.
+
 **No extra Salesforce reads.** Step 2 already returned every CRM field the thresholds need (LastActivityDate, CloseDate, LastModifiedDate, NextStep, ForecastCategory, `__c` signals). Do NOT dispatch per-opp SF follow-ups (EmailMessage / Task / OpportunityFieldHistory / activity queries) — each is a serial round-trip. Evidence here is ONLY the external email/doc/slack connectors above; if those aren't present, skip.
 
 ## 3. Check thresholds (compute explicit dates from today — never quarter-relative)
@@ -63,7 +65,11 @@ Per open opp, fire a signal only when the record shows the trigger:
 - **Renewal opening** — renewal entering lead-time window
 - **Competitor mention** — named in recent email/transcript
 
+**Stale commitment — Quick/Kiro adaptation:** A next step has been unchanged for 21+ days when `<NEXTSTEP>` is set and `LastModifiedDate` is 21 or more days before today, because no field on the deal has changed since then. Fire Stale commitment for each such deal. When `LastModifiedDate` is more recent, the record does not show the trigger, so do not fire it.
+
 ## 4. Widget (default output when `display_widget` is present: Cowork/desktop/web)
+
+**Output choice — local correction:** This widget shows one opportunity's buying signals, and no step computes its composite score or six-week score trend. For a book or team sweep, do not call `display_widget`; the step 5 digest is the final output, overriding the widget-first rule. When the request names one deal that is in the step 2 results, call `display_widget` for that deal alone and remove the `tile/column` that holds the chart and meter, because the widget schema requires data the skill does not have. Give signal counts only in `subtitle`, use Watch for each risk row's `status` and `dir`, and skip the "two graphs present" check. Never invent a score or a trend.
 
 When the data is assembled, call `display_widget`; a single one-line "Displaying the visualization now (this may take a minute)." notice may precede it.
 
@@ -536,3 +542,5 @@ Per fired signal, surface the trigger value **plus one or two supporting facts**
 ✅ Nothing else crossed a threshold (<N> opps swept)
 ```
 Link each record. CRM fix → offer `update-opportunity`; a touch → `draft-outreach`/`schedule-meeting`. Scheduled run: lead with count of new items since last run; a quiet digest is success.
+
+**Complete digest — Quick/Kiro adaptation:** List every deal that fired a signal, under its strongest signal; lower-priority deals in the same group may share one line, but never drop a flagged deal to shorten the digest. Always end with the ✅ line. Before sending, check that the number of deals listed equals the number that fired a signal.

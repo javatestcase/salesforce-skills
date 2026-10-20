@@ -99,6 +99,31 @@ Plot on a 2x2 (Fit × Engagement). **High = 6 or more** on that axis; low = 5 or
 - **Tier C** (low fit, high engagement): qualify hard — one discovery call to confirm fit or DQ.
 - **Deprioritize** (low fit, low engagement): no active motion, revisit quarterly.
 
+**Quick/Kiro tier-display reconciliation — local adaptation:** For every rendered tiering
+widget, compute raw Fit and Engagement scores first and use those same raw 0–10 scores in all
+classification surfaces.
+
+- The heatmap MUST be binary, not three-band: `heatmapXLabels` is exactly
+  `["Low (0–5)", "High (6–10)"]`; `heatmapYLabels` is exactly
+  `["High fit (6–10)", "Low fit (0–5)"]`.
+- Assign every account to a heatmap cell from raw scores before any display conversion. The
+  High-fit/High-engagement count MUST equal Tier A; High-fit/Low-engagement MUST equal Tier B;
+  Low-fit/High-engagement MUST equal Tier C; Low-fit/Low-engagement MUST equal Deprioritize.
+  The heatmap-cell total, pie-slice total, and scored-book count MUST all agree.
+- `heatmapDomain` is an account-count range, not a score range. Omit empty cells but never create
+  a Mid fit or Mid engagement band.
+- The Tier A datagrid keeps presentation-only scales: `fit` is raw Fit ÷ 2 (0–5, including .5)
+  and `engage` is raw Engagement × 10 (0–100). Those converted values MUST NOT determine a tier
+  or heatmap cell.
+- `arr` and `white` are optional, evidence-backed currency metrics—not required row defaults.
+  Include `arr` only when Step 1 grounded an accessible currency field explicitly meaning ARR or
+  Annual Recurring Revenue and Step 2 queried a value from it; standard `AnnualRevenue` is not
+  ARR. Include `white` only from a queried currency field explicitly meaning Whitespace or
+  Expansion Potential; a picklist such as Upsell Opportunity is not a whitespace amount.
+- If an ARR or Whitespace field is absent, inaccessible, null, or unqueried, omit that row key and
+  its corresponding datagrid column. Never substitute `0`, `$0`, or `$0.00` for unavailable data.
+  If both are unavailable, render only Account, ICP fit, Engagement, and Motion columns.
+
 **Disclosures** — carry each that applies into the output (the widget `subtitle`; in the text fallback, a line under the heading):
 - Partial book (`hasNextPage: true`): "first 200 of [totalCount] accounts — narrow the scope to tier the rest". The widget `title` and the text heading also count "200 of [totalCount]", never just 200.
 - Standard-field fallback: "custom fit fields unavailable — scored on standard fields".

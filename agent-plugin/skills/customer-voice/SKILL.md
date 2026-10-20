@@ -46,6 +46,8 @@ dispatch_readonly(method: "GET", url: "/services/data/v63.0/query",
 - **docs**: transcripts / notes / meeting docs in the period, in account-named folders (team scope → team-shared too).
 - **email**: threads in the period to/from the scoped account domains.
 
+**Sources — Quick/Kiro adaptation:** Quotes come only from these docs and email searches. Salesforce only scopes this skill: make no Salesforce reads beyond the three in step 1, never search Tasks, Events, Cases, or other records as a substitute source, and report no counts from such a search.
+
 ## 3. Extract quotes (strict — customer-only, on-topic, verbatim)
 
 Per transcript/thread, pull passages where the **customer** (not your domain/org) speaks on the topic: verbatim quote (1–3 sentences) · speaker name + title + account · date + source · one-line context. Paraphrase is NOT voice-of-customer. Open-ended topic → cluster by theme, return top 3–5 by frequency.
@@ -66,3 +68,5 @@ Per transcript/thread, pull passages where the **customer** (not your domain/org
 - <N> accounts in scope had no transcript/thread in period
 - Topic not mentioned in: <accounts>
 ```
+
+**No quotes found — Quick/Kiro adaptation:** If no transcript or thread has an on-topic customer quote, still return this template with 0 quotes, keeping the topic and period in the header. Write `None` under Accounts represented and fill Gaps as shown. Close with at most one line offering a wider period or scope, or asking for a transcript, notes doc, or email thread to search; offer no other source.

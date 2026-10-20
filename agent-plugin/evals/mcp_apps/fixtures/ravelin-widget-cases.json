@@ -76,7 +76,7 @@
     "expectedText": ["Today — Friday, Jul 24", "Ravelin contract review", "Prep now", "The 9:00 Ravelin review needs prep", "Draft Ravelin agenda"],
     "values": {
       "title": "Today — Friday, Jul 24",
-      "subtitle": "4 meetings · 3 deal-linked · 3 external · first at 9:00, last ends 4:30",
+      "subtitle": "4 meetings · 3 deal-linked · first at 9:00, last ends 4:30",
       "datagridCaption": "Schedule, in order",
       "datagridRows": [{"status": {"value": "Prep now", "badgeVariant": "error"}, "time": "9:00 AM", "title": "Ravelin contract review", "deal": "Ravelin Network Modernization", "value": 1800000, "prep": {"value": "Redlines ready?", "badgeVariant": "error"}}, {"time": "10:30 AM", "title": "Pipeline sync", "deal": "—", "value": {"value": 0, "display": "—"}, "prep": {"value": "Scoreboard", "badgeVariant": "neutral"}}, {"status": {"value": "Ready", "badgeVariant": "success"}, "time": "1:00 PM", "title": "Northstar solution review", "deal": "Dispatch Expansion", "value": 900000, "prep": {"value": "Deck ready", "badgeVariant": "success"}}],
       "calloutVariant": "error",

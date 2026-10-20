@@ -31,6 +31,10 @@ rubric:
   - "Each fired signal shows the trigger value plus one or two supporting facts, separated for scannability."
   - "No per-opp Salesforce follow-up reads are issued; evidence comes only from external connectors."
   - "A quiet sweep (nothing crossed a threshold) is reported as success with the opp count."
+  - "A book or team sweep returns the text digest; a single-deal widget omits the score meter and trend, and no score or trend is invented."
+  - "Stale commitment fires for each deal with a next step whose LastModifiedDate is 21 or more days old, and only then."
+  - "When an email tool is available the evidence search runs; otherwise the output says email was not checked."
+  - "Every deal with a fired signal appears in the digest, lower-priority ones possibly sharing a line, and the digest ends with the ✅ line."
 
 efficiency:
   no_repeated_identical_reads: true

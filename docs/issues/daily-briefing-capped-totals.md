@@ -132,4 +132,3 @@ detail root.
 the capped visible rows.
 
 This preserves the briefing's bounded-detail design while making aggregate-style claims accurate.
-It does not change the active mirror.
